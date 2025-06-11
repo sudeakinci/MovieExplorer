@@ -11,22 +11,24 @@ import com.example.moviemobileproject.ui.screens.ProfileScreen
 import com.example.moviemobileproject.ui.screens.SavedMoviesScreen
 import com.example.moviemobileproject.ui.screens.SearchScreen
 import com.example.moviemobileproject.ui.screens.SignupScreen
+import com.example.moviemobileproject.ui.viewmodel.AuthViewModel
 
 @Composable
 fun MovieNavigation(
     navController: NavHostController,
-    startDestination: String
+    startDestination: String,
+    authViewModel: AuthViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
         composable(Screen.Login.route) {
-            LoginScreen(navController = navController)
+            LoginScreen(navController = navController, authViewModel = authViewModel)
         }
         
         composable(Screen.Signup.route) {
-            SignupScreen(navController = navController)
+            SignupScreen(navController = navController, authViewModel = authViewModel)
         }
         
         composable(Screen.Dashboard.route) {
@@ -44,13 +46,12 @@ fun MovieNavigation(
                 categoryName = categoryName
             )
         }
-        
         composable(Screen.SavedMovies.route) {
             SavedMoviesScreen(navController = navController)
         }
         
         composable(Screen.Profile.route) {
-            ProfileScreen(navController = navController)
+            ProfileScreen(navController = navController, authViewModel = authViewModel)
         }
     }
 }

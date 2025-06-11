@@ -39,38 +39,62 @@ class MovieViewModel : ViewModel() {
     fun loadPopularMovies() {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getPopularMovies().collect { movies ->
-                _popularMovies.value = movies
-                _isLoading.value = false
-            }
+            movieRepository.getPopularMovies()
+                .onSuccess { movies ->
+                    _popularMovies.value = movies
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
         }
     }
     
     fun loadMoviesByCategory(category: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.getMoviesByCategory(category).collect { movies ->
-                _categoryMovies.value = movies
-                _isLoading.value = false
-            }
+            movieRepository.getMoviesByCategory(category)
+                .onSuccess { movies ->
+                    _categoryMovies.value = movies
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
         }
     }
     
     fun searchMovies(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        
         viewModelScope.launch {
             _isLoading.value = true
-            movieRepository.searchMovies(query).collect { movies ->
-                _searchResults.value = movies
-                _isLoading.value = false
-            }
+            movieRepository.searchMovies(query)
+                .onSuccess { movies ->
+                    _searchResults.value = movies
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
         }
     }
     
     fun loadSavedMovies() {
         viewModelScope.launch {
-            movieRepository.getSavedMovies().collect { movies ->
-                _savedMovies.value = movies
-            }
+            movieRepository.getSavedMovies()
+                .onSuccess { movies ->
+                    _savedMovies.value = movies
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
         }
     }
     
@@ -80,8 +104,8 @@ class MovieViewModel : ViewModel() {
                 .onSuccess {
                     loadSavedMovies() // Refresh saved movies
                 }
-                .onFailure {
-                    _errorMessage.value = "Failed to save movie: ${it.message}"
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
                 }
         }
     }
@@ -92,8 +116,8 @@ class MovieViewModel : ViewModel() {
                 .onSuccess {
                     loadSavedMovies() // Refresh saved movies
                 }
-                .onFailure {
-                    _errorMessage.value = "Failed to remove movie: ${it.message}"
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
                 }
         }
     }
@@ -106,7 +130,7 @@ class MovieViewModel : ViewModel() {
         _errorMessage.value = null
     }
     
-    fun getCategories(): List<String> {
-        return listOf("Action", "Drama", "Sci-Fi", "Crime", "Romance", "Comedy", "Horror", "Thriller")
+    fun getMovieCategories(): List<String> {
+        return movieRepository.getMovieCategories()
     }
 }

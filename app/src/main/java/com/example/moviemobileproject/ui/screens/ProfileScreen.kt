@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.moviemobileproject.data.repository.AuthRepository
 import com.example.moviemobileproject.navigation.Screen
@@ -29,21 +29,14 @@ import com.example.moviemobileproject.ui.viewmodel.AuthViewModel
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    val authRepository = AuthRepository()
-    var userData by remember { mutableStateOf<Map<String, Any>?>(null) }
+    val userData by authViewModel.userData.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
     
     LaunchedEffect(Unit) {
-        authRepository.getUserData()
-            .onSuccess { data ->
-                userData = data
-                isLoading = false
-            }
-            .onFailure {
-                isLoading = false
-            }
+        authViewModel.getUserData()
+        isLoading = false
     }
     
     Scaffold(

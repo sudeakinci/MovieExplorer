@@ -15,9 +15,8 @@ class MovieRepository {
     
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    
-    suspend fun getPopularMovies(): Flow<List<Movie>> = flow {
-        try {
+      suspend fun getPopularMovies(): Result<List<Movie>> {
+        return try {
             val snapshot = firestore.collection("movies")
                 .whereEqualTo("isPopular", true)
                 .get()
@@ -26,14 +25,13 @@ class MovieRepository {
             val movies = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Movie::class.java)?.copy(id = doc.id)
             }
-            emit(movies)
+            Result.success(movies)
         } catch (e: Exception) {
-            emit(getSampleMovies().filter { it.isPopular })
+            Result.success(getSampleMovies().filter { it.isPopular })
         }
     }
-    
-    suspend fun getMoviesByCategory(category: String): Flow<List<Movie>> = flow {
-        try {
+      suspend fun getMoviesByCategory(category: String): Result<List<Movie>> {
+        return try {
             val snapshot = firestore.collection("movies")
                 .whereEqualTo("category", category)
                 .get()
@@ -42,14 +40,13 @@ class MovieRepository {
             val movies = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Movie::class.java)?.copy(id = doc.id)
             }
-            emit(movies)
+            Result.success(movies)
         } catch (e: Exception) {
-            emit(getSampleMovies().filter { it.category == category })
+            Result.success(getSampleMovies().filter { it.category == category })
         }
     }
-    
-    suspend fun searchMovies(query: String): Flow<List<Movie>> = flow {
-        try {
+      suspend fun searchMovies(query: String): Result<List<Movie>> {
+        return try {
             val snapshot = firestore.collection("movies")
                 .get()
                 .await()
@@ -59,16 +56,15 @@ class MovieRepository {
             }.filter { 
                 it.title.contains(query, ignoreCase = true) 
             }
-            emit(movies)
+            Result.success(movies)
         } catch (e: Exception) {
-            emit(getSampleMovies().filter { 
+            Result.success(getSampleMovies().filter { 
                 it.title.contains(query, ignoreCase = true) 
             })
         }
     }
-    
-    suspend fun getAllMovies(): Flow<List<Movie>> = flow {
-        try {
+      suspend fun getAllMovies(): Result<List<Movie>> {
+        return try {
             val snapshot = firestore.collection("movies")
                 .get()
                 .await()
@@ -76,16 +72,15 @@ class MovieRepository {
             val movies = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Movie::class.java)?.copy(id = doc.id)
             }
-            emit(movies)
+            Result.success(movies)
         } catch (e: Exception) {
-            emit(getSampleMovies())
+            Result.success(getSampleMovies())
         }
     }
-    
-    suspend fun getSavedMovies(): Flow<List<SavedMovie>> = flow {
+      suspend fun getSavedMovies(): Result<List<SavedMovie>> {
         val userId = auth.currentUser?.uid
         if (userId != null) {
-            try {
+            return try {
                 val snapshot = firestore.collection("users")
                     .document(userId)
                     .get()
@@ -99,12 +94,12 @@ class MovieRepository {
                         imageUrl = map["imageUrl"] as? String ?: ""
                     )
                 }
-                emit(movies)
+                Result.success(movies)
             } catch (e: Exception) {
-                emit(emptyList())
+                Result.success(emptyList())
             }
         } else {
-            emit(emptyList())
+            return Result.success(emptyList())
         }
     }
     
@@ -250,9 +245,23 @@ class MovieRepository {
                 isPopular = true,
                 imageUrl = "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
                 description = "A computer programmer is led to fight an underground war against powerful computers who have constructed his entire reality with a system called the Matrix.",
-                rating = 8.7,
-                releaseYear = 1999
+                rating = 8.7,                releaseYear = 1999
             )
+        )
+    }
+    
+    fun getMovieCategories(): List<String> {
+        return listOf(
+            "Action",
+            "Comedy", 
+            "Drama",
+            "Horror",
+            "Romance",
+            "Sci-Fi",
+            "Thriller",
+            "Animation",
+            "Adventure",
+            "Crime"
         )
     }
 }

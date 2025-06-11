@@ -36,9 +36,10 @@ fun DashboardScreen(
     movieViewModel: MovieViewModel = viewModel()
 ) {
     val popularMovies by movieViewModel.popularMovies.collectAsState()
-    val isLoading by movieViewModel.isLoading.collectAsState()
     val savedMovies by movieViewModel.savedMovies.collectAsState()
-    val categories = movieViewModel.getCategories()
+    val isLoading by movieViewModel.isLoading.collectAsState()
+    val errorMessage by movieViewModel.errorMessage.collectAsState()
+    val categories = movieViewModel.getMovieCategories()
     
     Scaffold(
         topBar = {
