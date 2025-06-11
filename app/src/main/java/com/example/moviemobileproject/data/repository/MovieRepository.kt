@@ -1,0 +1,258 @@
+package com.example.moviemobileproject.data.repository
+
+import com.example.moviemobileproject.data.model.Movie
+import com.example.moviemobileproject.data.model.SavedMovie
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class MovieRepository {
+    
+    private val firestore = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    
+    suspend fun getPopularMovies(): Flow<List<Movie>> = flow {
+        try {
+            val snapshot = firestore.collection("movies")
+                .whereEqualTo("isPopular", true)
+                .get()
+                .await()
+            
+            val movies = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(getSampleMovies().filter { it.isPopular })
+        }
+    }
+    
+    suspend fun getMoviesByCategory(category: String): Flow<List<Movie>> = flow {
+        try {
+            val snapshot = firestore.collection("movies")
+                .whereEqualTo("category", category)
+                .get()
+                .await()
+            
+            val movies = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(getSampleMovies().filter { it.category == category })
+        }
+    }
+    
+    suspend fun searchMovies(query: String): Flow<List<Movie>> = flow {
+        try {
+            val snapshot = firestore.collection("movies")
+                .get()
+                .await()
+            
+            val movies = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            }.filter { 
+                it.title.contains(query, ignoreCase = true) 
+            }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(getSampleMovies().filter { 
+                it.title.contains(query, ignoreCase = true) 
+            })
+        }
+    }
+    
+    suspend fun getAllMovies(): Flow<List<Movie>> = flow {
+        try {
+            val snapshot = firestore.collection("movies")
+                .get()
+                .await()
+            
+            val movies = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            }
+            emit(movies)
+        } catch (e: Exception) {
+            emit(getSampleMovies())
+        }
+    }
+    
+    suspend fun getSavedMovies(): Flow<List<SavedMovie>> = flow {
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            try {
+                val snapshot = firestore.collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+                
+                val savedMovies = snapshot.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
+                val movies = savedMovies.map { map ->
+                    SavedMovie(
+                        movieId = map["movieId"] as? String ?: "",
+                        title = map["title"] as? String ?: "",
+                        imageUrl = map["imageUrl"] as? String ?: ""
+                    )
+                }
+                emit(movies)
+            } catch (e: Exception) {
+                emit(emptyList())
+            }
+        } else {
+            emit(emptyList())
+        }
+    }
+    
+    suspend fun saveMovie(movie: Movie): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        
+        return try {
+            val savedMovie = SavedMovie(
+                movieId = movie.id,
+                title = movie.title,
+                imageUrl = movie.imageUrl
+            )
+            
+            firestore.collection("users")
+                .document(userId)
+                .update("saved_movies", com.google.firebase.firestore.FieldValue.arrayUnion(savedMovie))
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun removeSavedMovie(movieId: String): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        
+        return try {
+            val userDoc = firestore.collection("users").document(userId).get().await()
+            val savedMovies = userDoc.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
+            
+            val updatedMovies = savedMovies.filter { map ->
+                map["movieId"] as? String != movieId
+            }
+            
+            firestore.collection("users")
+                .document(userId)
+                .update("saved_movies", updatedMovies)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    private fun getSampleMovies(): List<Movie> {
+        return listOf(
+            Movie(
+                id = "1",
+                title = "Inception",
+                category = "Action",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+                description = "A skilled thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                rating = 8.8,
+                releaseYear = 2010
+            ),
+            Movie(
+                id = "2",
+                title = "The Dark Knight",
+                category = "Action",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+                description = "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+                rating = 9.0,
+                releaseYear = 2008
+            ),
+            Movie(
+                id = "3",
+                title = "Interstellar",
+                category = "Sci-Fi",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+                description = "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+                rating = 8.6,
+                releaseYear = 2014
+            ),
+            Movie(
+                id = "4",
+                title = "The Godfather",
+                category = "Drama",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+                description = "An organized crime dynasty's aging patriarch transfers control of his clandestine empire to his reluctant son.",
+                rating = 9.2,
+                releaseYear = 1972
+            ),
+            Movie(
+                id = "5",
+                title = "Pulp Fiction",
+                category = "Crime",
+                isPopular = false,
+                imageUrl = "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+                description = "The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.",
+                rating = 8.9,
+                releaseYear = 1994
+            ),
+            Movie(
+                id = "6",
+                title = "Avatar",
+                category = "Sci-Fi",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg",
+                description = "A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following his orders and protecting the world he feels is his home.",
+                rating = 7.8,
+                releaseYear = 2009
+            ),
+            Movie(
+                id = "7",
+                title = "The Shawshank Redemption",
+                category = "Drama",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+                description = "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                rating = 9.3,
+                releaseYear = 1994
+            ),
+            Movie(
+                id = "8",
+                title = "Forrest Gump",
+                category = "Drama",
+                isPopular = false,
+                imageUrl = "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+                description = "The presidencies of Kennedy and Johnson, the Vietnam War, the Watergate scandal and other historical events unfold from the perspective of an Alabama man with an IQ of 75.",
+                rating = 8.8,
+                releaseYear = 1994
+            ),
+            Movie(
+                id = "9",
+                title = "Titanic",
+                category = "Romance",
+                isPopular = false,
+                imageUrl = "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+                description = "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
+                rating = 7.8,
+                releaseYear = 1997
+            ),
+            Movie(
+                id = "10",
+                title = "The Matrix",
+                category = "Sci-Fi",
+                isPopular = true,
+                imageUrl = "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+                description = "A computer programmer is led to fight an underground war against powerful computers who have constructed his entire reality with a system called the Matrix.",
+                rating = 8.7,
+                releaseYear = 1999
+            )
+        )
+    }
+}
