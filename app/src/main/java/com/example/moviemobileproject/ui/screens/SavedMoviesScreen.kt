@@ -110,12 +110,15 @@ fun SavedMoviesScreen(
                                 id = savedMovie.movieId,
                                 title = savedMovie.title,
                                 imageUrl = savedMovie.imageUrl,
-//                                category = savedMovie.category,
-//                                description = savedMovie.description,
+                                category = savedMovie.category,
+                                description = savedMovie.description,
                                 isPopular = false
                             )
                             MovieCard(
                                 movie = movie,
+                                onCardClick = {
+                                    navController.navigate("movie_details/${savedMovie.movieId}")
+                                },
                                 onSaveClick = { 
                                     movieViewModel.removeSavedMovie(savedMovie.movieId)
                                 },

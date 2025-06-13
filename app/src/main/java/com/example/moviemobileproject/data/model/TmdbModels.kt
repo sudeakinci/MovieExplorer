@@ -71,7 +71,9 @@ data class TmdbMovieDetailsResponse(
     @SerializedName("budget")
     val budget: Long,
     @SerializedName("revenue")
-    val revenue: Long
+    val revenue: Long,
+    @SerializedName("tagline")
+    val tagline: String?
 )
 
 data class TmdbGenre(
@@ -90,6 +92,85 @@ data class TmdbProductionCompany(
     val logoPath: String?,
     @SerializedName("origin_country")
     val originCountry: String
+)
+
+data class MovieDetails(
+    val id: String,
+    val title: String,
+    val overview: String,
+    val posterUrl: String,
+    val backdropUrl: String,
+    val releaseDate: String,
+    val rating: Double,
+    val voteCount: Int,
+    val runtime: Int,
+    val genres: List<String>,
+    val trailerUrl: String?,
+    val cast: List<CastMember>,
+    val tagline: String?
+)
+
+data class CastMember(
+    val id: Int,
+    val name: String,
+    val character: String,
+    val profilePath: String?
+)
+
+// TMDB API Response Models for Videos and Credits
+data class TmdbVideoResponse(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("results")
+    val results: List<TmdbVideo>
+)
+
+data class TmdbVideo(
+    @SerializedName("key")
+    val key: String,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("site")
+    val site: String,
+    @SerializedName("type")
+    val type: String,
+    @SerializedName("official")
+    val official: Boolean
+)
+
+data class TmdbCreditsResponse(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("cast")
+    val cast: List<TmdbCast>,
+    @SerializedName("crew")
+    val crew: List<TmdbCrew>
+)
+
+data class TmdbCast(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("character")
+    val character: String,
+    @SerializedName("profile_path")
+    val profilePath: String?,
+    @SerializedName("order")
+    val order: Int
+)
+
+data class TmdbCrew(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("job")
+    val job: String,
+    @SerializedName("department")
+    val department: String,
+    @SerializedName("profile_path")
+    val profilePath: String?
 )
 
 // Extension function to convert TMDB movie to our app's Movie model
@@ -163,4 +244,30 @@ private fun extractYearFromDate(dateString: String): Int {
     } catch (e: Exception) {
         0
     }
+}
+
+// Extension function to convert TMDB movie details to our app's MovieDetails model
+fun TmdbMovieDetailsResponse.toMovieDetails(trailerKey: String?, cast: List<TmdbCast>): MovieDetails {
+    return MovieDetails(
+        id = this.id.toString(),
+        title = this.title,
+        overview = this.overview,
+        posterUrl = if (this.posterPath != null) "${Constants.TMDB_IMAGE_BASE_URL}${this.posterPath}" else "",
+        backdropUrl = if (this.backdropPath != null) "https://image.tmdb.org/t/p/w1280${this.backdropPath}" else "",
+        releaseDate = this.releaseDate,
+        rating = this.voteAverage,
+        voteCount = this.voteCount,
+        runtime = this.runtime ?: 0,
+        genres = this.genres.map { it.name },
+        trailerUrl = if (trailerKey != null) "https://www.youtube.com/watch?v=$trailerKey" else null,
+        cast = cast.take(10).map { 
+            CastMember(
+                id = it.id,
+                name = it.name,
+                character = it.character,
+                profilePath = if (it.profilePath != null) "https://image.tmdb.org/t/p/w185${it.profilePath}" else null
+            )
+        },
+        tagline = this.tagline
+    )
 }

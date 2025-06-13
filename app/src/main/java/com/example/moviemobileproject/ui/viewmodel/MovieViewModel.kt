@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.repository.MovieRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,9 @@ class MovieViewModel : ViewModel() {
     
     private val _allMovies = MutableStateFlow<List<Movie>>(emptyList())
     val allMovies: StateFlow<List<Movie>> = _allMovies
+    
+    private val _movieDetails = MutableStateFlow<MovieDetails?>(null)
+    val movieDetails: StateFlow<MovieDetails?> = _movieDetails
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -146,6 +150,25 @@ class MovieViewModel : ViewModel() {
     
     fun clearError() {
         _errorMessage.value = null
+    }
+    
+    fun loadMovieDetails(movieId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            movieRepository.getMovieDetails(movieId)
+                .onSuccess { details ->
+                    _movieDetails.value = details
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
+        }
+    }
+    
+    fun clearMovieDetails() {
+        _movieDetails.value = null
     }
     
     fun getMovieCategories(): List<String> {

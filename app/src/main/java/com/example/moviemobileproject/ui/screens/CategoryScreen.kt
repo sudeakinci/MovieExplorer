@@ -136,10 +136,12 @@ fun CategoryScreen(
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 modifier = Modifier.fillMaxWidth()
-                            ) {
-                                moviePair.forEach { movie ->
+                            ) {                                moviePair.forEach { movie ->
                                     MovieCard(
                                         movie = movie,
+                                        onCardClick = {
+                                            navController.navigate("movie_details/${movie.id}")
+                                        },
                                         isSaved = savedMovies.any { it.movieId == movie.id },
                                         onSaveClick = {
                                             if (savedMovies.any { it.movieId == movie.id }) {

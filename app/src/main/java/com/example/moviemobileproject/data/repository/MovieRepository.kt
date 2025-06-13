@@ -1,16 +1,16 @@
 package com.example.moviemobileproject.data.repository
 
 import com.example.moviemobileproject.data.model.Movie
+import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.TmdbCastMember
 import com.example.moviemobileproject.data.model.toMovie
+import com.example.moviemobileproject.data.model.toMovieDetails
 import com.example.moviemobileproject.data.network.NetworkModule
 import com.example.moviemobileproject.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
@@ -307,5 +307,45 @@ class MovieRepository {
             "Adventure",
             "Crime"
         )
+    }
+    
+    suspend fun getMovieDetails(movieId: String): Result<MovieDetails> {
+        return try {
+            val movieIdInt = movieId.toIntOrNull() ?: return Result.failure(Exception("Invalid movie ID"))
+            
+            // Get movie details
+            val detailsResponse = tmdbApi.getMovieDetails(movieIdInt, NetworkModule.TMDB_API_KEY)
+            if (!detailsResponse.isSuccessful) {
+                return Result.failure(Exception("Failed to fetch movie details"))
+            }
+            
+            val movieDetails = detailsResponse.body() ?: return Result.failure(Exception("Empty response"))
+            
+            // Get movie videos (trailers)
+            val videosResponse = tmdbApi.getMovieVideos(movieIdInt, NetworkModule.TMDB_API_KEY)
+            val trailerKey = videosResponse.body()?.results
+                ?.firstOrNull { it.type == "Trailer" && it.site == "YouTube" }?.key
+              // Get movie credits (cast)
+            val creditsResponse = tmdbApi.getMovieCredits(movieIdInt, NetworkModule.TMDB_API_KEY)
+            val tmdbCast = creditsResponse.body()?.cast ?: emptyList()
+            
+            // Convert TmdbCast to TmdbCastMember
+            val cast = tmdbCast.map { tmdbCastItem ->
+                TmdbCastMember(
+                    id = tmdbCastItem.id,
+                    name = tmdbCastItem.name,
+                    character = tmdbCastItem.character,
+                    profilePath = tmdbCastItem.profilePath,
+                    order = tmdbCastItem.order
+                )
+            }
+            
+            // Convert to app model
+            val details = movieDetails.toMovieDetails(trailerKey, cast)
+            Result.success(details)
+            
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

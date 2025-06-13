@@ -264,16 +264,7 @@ fun SearchScreen(
                             // Results counter and active filters
                             Column(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    text = if (searchQuery.isEmpty()) 
-                                        "Found ${filteredResults.size} movies with filters" 
-                                    else 
-                                        "Found ${filteredResults.size} movies for \"$searchQuery\"",
-                                    fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                                
+                            ) {                                
                                 // Show active filters
                                 if (hasActiveFilters) {
                                     val activeFilters = mutableListOf<String>()
@@ -303,10 +294,12 @@ fun SearchScreen(
                                 contentPadding = PaddingValues(16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(filteredResults) { movie ->
+                            ) {                                items(filteredResults) { movie ->
                                     MovieCard(
                                         movie = movie,
+                                        onCardClick = {
+                                            navController.navigate("movie_details/${movie.id}")
+                                        },
                                         onSaveClick = { 
                                             if (savedMovies.any { it.movieId == movie.id }) {
                                                 movieViewModel.removeSavedMovie(movie.id)

@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import com.example.moviemobileproject.ui.screens.CategoryScreen
 import com.example.moviemobileproject.ui.screens.DashboardScreen
 import com.example.moviemobileproject.ui.screens.LoginScreen
+import com.example.moviemobileproject.ui.screens.MovieDetailsScreen
 import com.example.moviemobileproject.ui.screens.ProfileScreen
 import com.example.moviemobileproject.ui.screens.SavedMoviesScreen
 import com.example.moviemobileproject.ui.screens.SearchScreen
@@ -49,9 +50,16 @@ fun MovieNavigation(
         composable(Screen.SavedMovies.route) {
             SavedMoviesScreen(navController = navController)
         }
-        
-        composable(Screen.Profile.route) {
+          composable(Screen.Profile.route) {
             ProfileScreen(navController = navController, authViewModel = authViewModel)
+        }
+        
+        composable("movie_details/{movieId}") { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getString("movieId") ?: ""
+            MovieDetailsScreen(
+                navController = navController,
+                movieId = movieId
+            )
         }
     }
 }

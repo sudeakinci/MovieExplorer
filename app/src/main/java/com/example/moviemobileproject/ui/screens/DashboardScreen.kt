@@ -115,10 +115,12 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.height(600.dp)
-                    ) {
-                        items(popularMovies) { movie ->
+                    ) {                        items(popularMovies) { movie ->
                             MovieCard(
                                 movie = movie,
+                                onCardClick = {
+                                    navController.navigate("movie_details/${movie.id}")
+                                },
                                 isSaved = savedMovies.any { it.movieId == movie.id },
                                 onSaveClick = {
                                     if (savedMovies.any { it.movieId == movie.id }) {
