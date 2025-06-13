@@ -2,6 +2,9 @@ package com.example.moviemobileproject.data.repository
 
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.toMovie
+import com.example.moviemobileproject.data.network.NetworkModule
+import com.example.moviemobileproject.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
@@ -15,48 +18,81 @@ class MovieRepository {
     
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-      suspend fun getPopularMovies(): Result<List<Movie>> {
+    private val tmdbApi = NetworkModule.tmdbApi
+    suspend fun getPopularMovies(): Result<List<Movie>> {
         return try {
-            val snapshot = firestore.collection("movies")
-                .whereEqualTo("isPopular", true)
-                .get()
-                .await()
-            
-            val movies = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            // First try to get from TMDB API
+            val tmdbResponse = tmdbApi.getPopularMovies(NetworkModule.TMDB_API_KEY)
+            if (tmdbResponse.isSuccessful) {
+                val tmdbMovies = tmdbResponse.body()?.results ?: emptyList()
+                val movies = tmdbMovies.map { it.toMovie() }
+                Result.success(movies)
+            } else {
+                // Fall back to Firebase/sample data
+                val snapshot = firestore.collection("movies")
+                    .whereEqualTo("isPopular", true)
+                    .get()
+                    .await()
+                
+                val movies = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Movie::class.java)?.copy(id = doc.id)
+                }
+                Result.success(movies)
             }
-            Result.success(movies)
         } catch (e: Exception) {
+            // Final fallback to sample data
             Result.success(getSampleMovies().filter { it.isPopular })
         }
-    }
-      suspend fun getMoviesByCategory(category: String): Result<List<Movie>> {
+    }    suspend fun getMoviesByCategory(category: String): Result<List<Movie>> {
         return try {
-            val snapshot = firestore.collection("movies")
-                .whereEqualTo("category", category)
-                .get()
-                .await()
+            // Try to get from TMDB API based on category
+            val genreId = getCategoryGenreId(category)
+            val tmdbResponse = tmdbApi.getMoviesByGenre(NetworkModule.TMDB_API_KEY, genreId.toString())
             
-            val movies = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            if (tmdbResponse.isSuccessful) {
+                val tmdbMovies = tmdbResponse.body()?.results ?: emptyList()
+                val movies = tmdbMovies.map { it.toMovie() }
+                Result.success(movies)
+            } else {
+                // Fall back to Firebase
+                val snapshot = firestore.collection("movies")
+                    .whereEqualTo("category", category)
+                    .get()
+                    .await()
+                
+                val movies = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Movie::class.java)?.copy(id = doc.id)
+                }
+                Result.success(movies)
             }
-            Result.success(movies)
         } catch (e: Exception) {
             Result.success(getSampleMovies().filter { it.category == category })
         }
     }
-      suspend fun searchMovies(query: String): Result<List<Movie>> {
+      private fun getCategoryGenreId(category: String): Int {
+        return Constants.GENRE_MAPPING[category] ?: 18 // Default to Drama
+    }suspend fun searchMovies(query: String): Result<List<Movie>> {
         return try {
-            val snapshot = firestore.collection("movies")
-                .get()
-                .await()
+            // Try TMDB API first
+            val tmdbResponse = tmdbApi.searchMovies(NetworkModule.TMDB_API_KEY, query)
             
-            val movies = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Movie::class.java)?.copy(id = doc.id)
-            }.filter { 
-                it.title.contains(query, ignoreCase = true) 
+            if (tmdbResponse.isSuccessful) {
+                val tmdbMovies = tmdbResponse.body()?.results ?: emptyList()
+                val movies = tmdbMovies.map { it.toMovie() }
+                Result.success(movies)
+            } else {
+                // Fall back to Firebase
+                val snapshot = firestore.collection("movies")
+                    .get()
+                    .await()
+                
+                val movies = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Movie::class.java)?.copy(id = doc.id)
+                }.filter { 
+                    it.title.contains(query, ignoreCase = true) 
+                }
+                Result.success(movies)
             }
-            Result.success(movies)
         } catch (e: Exception) {
             Result.success(getSampleMovies().filter { 
                 it.title.contains(query, ignoreCase = true) 

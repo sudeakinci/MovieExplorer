@@ -101,8 +101,7 @@ fun DashboardScreen(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp)
-                ) {
-                    // Popular Movies Section
+                ) {                    // Popular Movies Section
                     Text(
                         text = "🔥 Popular Movies",
                         fontSize = 20.sp,
@@ -111,9 +110,11 @@ fun DashboardScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
-                    LazyRow(
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.height(600.dp)
                     ) {
                         items(popularMovies) { movie ->
                             MovieCard(
@@ -128,7 +129,8 @@ fun DashboardScreen(
                                 }
                             )
                         }
-                    }
+                    }                    
+                    Spacer(modifier = Modifier.height(24.dp))
                     
                     // Categories Section
                     Text(
