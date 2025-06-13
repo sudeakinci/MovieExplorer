@@ -3,6 +3,9 @@ package com.example.moviemobileproject.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -172,17 +175,24 @@ fun SearchScreen(
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
-                    }
-                } else {
+                    }                } else {
                     // Search results
-                    LazyColumn(
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(searchResults) { movie ->
                             MovieCard(
                                 movie = movie,
-                                onSaveClick = { movieViewModel.saveMovie(movie) },
+                                onSaveClick = { 
+                                    if (savedMovies.any { it.movieId == movie.id }) {
+                                        movieViewModel.removeSavedMovie(movie.id)
+                                    } else {
+                                        movieViewModel.saveMovie(movie)
+                                    }
+                                },
                                 isSaved = savedMovies.any { it.movieId == movie.id }
                             )
                         }
