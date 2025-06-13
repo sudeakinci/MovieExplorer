@@ -3,6 +3,9 @@ package com.example.moviemobileproject.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -95,10 +98,11 @@ fun SavedMoviesScreen(
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
-                    }
-                } else {
-                    LazyColumn(
+                    }                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
                         contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(savedMovies) { savedMovie ->
@@ -112,11 +116,10 @@ fun SavedMoviesScreen(
                             )
                             MovieCard(
                                 movie = movie,
-                                onSaveClick = { },
-                                isSaved = true,
-//                                onDeleteClick = {
-//                                    movieViewModel.removeSavedMovie(savedMovie.movieId)
-//                                }
+                                onSaveClick = { 
+                                    movieViewModel.removeSavedMovie(savedMovie.movieId)
+                                },
+                                isSaved = true
                             )
                         }
                     }
