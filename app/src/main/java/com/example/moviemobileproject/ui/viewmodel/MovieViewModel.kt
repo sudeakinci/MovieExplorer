@@ -25,6 +25,9 @@ class MovieViewModel : ViewModel() {
     private val _savedMovies = MutableStateFlow<List<SavedMovie>>(emptyList())
     val savedMovies: StateFlow<List<SavedMovie>> = _savedMovies
     
+    private val _allMovies = MutableStateFlow<List<Movie>>(emptyList())
+    val allMovies: StateFlow<List<Movie>> = _allMovies
+    
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
     
@@ -119,6 +122,21 @@ class MovieViewModel : ViewModel() {
                 .onFailure { exception ->
                     _errorMessage.value = exception.message
                 }
+        }
+    }
+    
+    fun loadAllMovies() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            movieRepository.getAllMovies()
+                .onSuccess { movies ->
+                    _allMovies.value = movies
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
         }
     }
     

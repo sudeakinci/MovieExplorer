@@ -98,17 +98,25 @@ class MovieRepository {
                 it.title.contains(query, ignoreCase = true) 
             })
         }
-    }
-      suspend fun getAllMovies(): Result<List<Movie>> {
+    }    suspend fun getAllMovies(): Result<List<Movie>> {
         return try {
-            val snapshot = firestore.collection("movies")
-                .get()
-                .await()
-            
-            val movies = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Movie::class.java)?.copy(id = doc.id)
+            // Try to get from TMDB API (popular movies as a good sample)
+            val tmdbResponse = tmdbApi.getPopularMovies(NetworkModule.TMDB_API_KEY)
+            if (tmdbResponse.isSuccessful) {
+                val tmdbMovies = tmdbResponse.body()?.results ?: emptyList()
+                val movies = tmdbMovies.map { it.toMovie() }
+                Result.success(movies)
+            } else {
+                // Fall back to Firebase
+                val snapshot = firestore.collection("movies")
+                    .get()
+                    .await()
+                
+                val movies = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Movie::class.java)?.copy(id = doc.id)
+                }
+                Result.success(movies)
             }
-            Result.success(movies)
         } catch (e: Exception) {
             Result.success(getSampleMovies())
         }

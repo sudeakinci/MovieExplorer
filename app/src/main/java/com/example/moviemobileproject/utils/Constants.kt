@@ -6,8 +6,6 @@ object Constants {
     const val TMDB_BASE_URL = "https://api.themoviedb.org/3/"
     const val TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
     
-    // Replace this with your actual TMDB API key
-    // Get your API key from: https://www.themoviedb.org/settings/api
     const val TMDB_API_KEY = "539e809d39ce19b3ba0a9a6338e99d98"
     
     // Genre mapping for categories
