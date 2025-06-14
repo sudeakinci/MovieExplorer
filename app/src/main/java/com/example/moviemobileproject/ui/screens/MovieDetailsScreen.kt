@@ -148,18 +148,29 @@ fun MovieDetailsScreen(
                 movieDetails != null -> {
                     MovieDetailsContent(
                         movieDetails = movieDetails!!,
-                        isSaved = savedMovies.any { it.movieId == movieId },
-                        onSaveClick = {
+                        isSaved = savedMovies.any { it.movieId == movieId },                        onSaveClick = {
                             if (savedMovies.any { it.movieId == movieId }) {
                                 movieViewModel.removeSavedMovie(movieId)
                             } else {
-                                // Create a basic Movie object for saving
+                                // Create a complete Movie object for saving with all details
+                                val releaseYear = if (movieDetails!!.releaseDate.isNotEmpty()) {
+                                    try {
+                                        movieDetails!!.releaseDate.substring(0, 4).toInt()
+                                    } catch (e: Exception) { 0 }
+                                } else { 0 }
+                                
                                 val movie = com.example.moviemobileproject.data.model.Movie(
                                     id = movieId,
                                     title = movieDetails!!.title,
                                     imageUrl = movieDetails!!.posterUrl,
                                     category = movieDetails!!.genres.firstOrNull() ?: "Unknown",
-                                    description = movieDetails!!.overview
+                                    description = movieDetails!!.overview,
+                                    rating = movieDetails!!.rating,
+                                    releaseYear = releaseYear,
+                                    duration = movieDetails!!.runtime,
+                                    genre = movieDetails!!.genres,
+                                    director = "", // Director info not available in current MovieDetails model
+                                    cast = movieDetails!!.cast.map { it.name }
                                 )
                                 movieViewModel.saveMovie(movie)
                             }
