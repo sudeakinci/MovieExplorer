@@ -11,11 +11,9 @@ import com.example.moviemobileproject.navigation.MovieNavigation
 import com.example.moviemobileproject.navigation.Screen
 import com.example.moviemobileproject.ui.theme.MovieMobileProjectTheme
 import com.example.moviemobileproject.ui.viewmodel.AuthViewModel
-import com.example.moviemobileproject.utils.FirebaseDataInitializer
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -38,14 +36,6 @@ class MainActivity : ComponentActivity() {
 fun MovieApp() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = hiltViewModel()
-    val scope = rememberCoroutineScope()
-    
-    // Initialize sample data on first run
-    LaunchedEffect(Unit) {
-        scope.launch {
-            FirebaseDataInitializer.initializeSampleData()
-        }
-    }
     
     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
     

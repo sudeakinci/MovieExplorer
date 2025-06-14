@@ -42,10 +42,9 @@ class MovieRepository {
                     doc.toObject(Movie::class.java)?.copy(id = doc.id)
                 }
                 Result.success(movies)
-            }
-        } catch (e: Exception) {
-            // Final fallback to sample data
-            Result.success(getSampleMovies().filter { it.isPopular })
+            }        } catch (e: Exception) {
+            // Return empty list if API and Firebase fail
+            Result.success(emptyList())
         }
     }    suspend fun getMoviesByCategory(category: String): Result<List<Movie>> {
         return try {
@@ -68,9 +67,8 @@ class MovieRepository {
                     doc.toObject(Movie::class.java)?.copy(id = doc.id)
                 }
                 Result.success(movies)
-            }
-        } catch (e: Exception) {
-            Result.success(getSampleMovies().filter { it.category == category })
+            }        } catch (e: Exception) {
+            Result.success(emptyList())
         }    }
       
     private fun getCategoryGenreId(category: String): Int {
@@ -98,11 +96,8 @@ class MovieRepository {
                     it.title.contains(query, ignoreCase = true) 
                 }
                 Result.success(movies)
-            }
-        } catch (e: Exception) {
-            Result.success(getSampleMovies().filter { 
-                it.title.contains(query, ignoreCase = true) 
-            })
+            }        } catch (e: Exception) {
+            Result.success(emptyList())
         }
     }    suspend fun getAllMovies(): Result<List<Movie>> {
         return try {
@@ -122,9 +117,8 @@ class MovieRepository {
                     doc.toObject(Movie::class.java)?.copy(id = doc.id)
                 }
                 Result.success(movies)
-            }
-        } catch (e: Exception) {
-            Result.success(getSampleMovies())
+            }        } catch (e: Exception) {
+            Result.success(emptyList())
         }
     }
       suspend fun getSavedMovies(): Result<List<SavedMovie>> {
