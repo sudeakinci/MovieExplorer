@@ -378,13 +378,25 @@ class MovieRepository {
             }
             
             val credits = response.body() ?: return Result.failure(Exception("Empty response"))
-            
-            // Combine cast and crew movies, prioritize cast roles
+              // Combine cast and crew movies, prioritize cast roles
             val castMovies = credits.cast.map { it.toPersonMovie() }
             val crewMovies = credits.crew.map { it.toPersonMovie() }
             
+            // Remove duplicates by movie ID, prioritizing cast roles over crew roles
+            val movieMap = mutableMapOf<String, PersonMovie>()
+            
+            // First add crew movies
+            crewMovies.forEach { movie ->
+                movieMap[movie.id] = movie
+            }
+            
+            // Then add cast movies (this will overwrite crew entries for the same movie ID)
+            castMovies.forEach { movie ->
+                movieMap[movie.id] = movie
+            }
+            
             // Sort by release date (most recent first) and take top 20
-            val allMovies = (castMovies + crewMovies)
+            val allMovies = movieMap.values
                 .sortedByDescending { it.releaseDate }
                 .take(20)
             
