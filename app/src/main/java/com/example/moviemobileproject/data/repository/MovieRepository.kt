@@ -129,13 +129,21 @@ class MovieRepository {
                     .document(userId)
                     .get()
                     .await()
-                
-                val savedMovies = snapshot.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
+                  val savedMovies = snapshot.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
                 val movies = savedMovies.map { map ->
                     SavedMovie(
                         movieId = map["movieId"] as? String ?: "",
                         title = map["title"] as? String ?: "",
-                        imageUrl = map["imageUrl"] as? String ?: ""
+                        imageUrl = map["imageUrl"] as? String ?: "",
+                        category = map["category"] as? String ?: "",
+                        description = map["description"] as? String ?: "",
+                        rating = (map["rating"] as? Number)?.toDouble() ?: 0.0,
+                        releaseYear = (map["releaseYear"] as? Number)?.toInt() ?: 0,
+                        director = map["director"] as? String ?: "",
+                        cast = (map["cast"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        genre = (map["genre"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        duration = (map["duration"] as? Number)?.toInt() ?: 0,
+                        savedAt = (map["savedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
                     )
                 }
                 Result.success(movies)
@@ -146,15 +154,22 @@ class MovieRepository {
             return Result.success(emptyList())
         }
     }
-    
-    suspend fun saveMovie(movie: Movie): Result<Unit> {
+      suspend fun saveMovie(movie: Movie): Result<Unit> {
         val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
         
         return try {
             val savedMovie = SavedMovie(
                 movieId = movie.id,
                 title = movie.title,
-                imageUrl = movie.imageUrl
+                imageUrl = movie.imageUrl,
+                category = movie.category,
+                description = movie.description,
+                rating = movie.rating,
+                releaseYear = movie.releaseYear,
+                director = movie.director,
+                cast = movie.cast,
+                genre = movie.genre,
+                duration = movie.duration
             )
             
             firestore.collection("users")
