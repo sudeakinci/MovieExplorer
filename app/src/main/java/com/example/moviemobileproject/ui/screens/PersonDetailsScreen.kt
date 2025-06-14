@@ -312,6 +312,9 @@ fun PersonHeaderSection(personDetails: PersonDetails) {
 @Composable
 fun BiographySection(biography: String) {
     if (biography.isNotEmpty()) {
+        var isExpanded by remember { mutableStateOf(false) }
+        val maxLines = 15
+        
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -330,8 +333,29 @@ fun BiographySection(biography: String) {
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 color = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.padding(bottom = 24.dp)
+                maxLines = if (isExpanded) Int.MAX_VALUE else maxLines,
+                overflow = if (isExpanded) TextOverflow.Visible else TextOverflow.Ellipsis,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+            
+            // Show "Read More/Read Less" button only if text is long enough
+            if (biography.length > 500) { // Approximate check for long text
+                TextButton(
+                    onClick = { isExpanded = !isExpanded },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF6366F1)
+                    ),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = if (isExpanded) "Read Less" else "Read More",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

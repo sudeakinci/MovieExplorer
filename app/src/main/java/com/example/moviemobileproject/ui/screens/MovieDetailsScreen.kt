@@ -145,10 +145,10 @@ fun MovieDetailsScreen(
                     }
                 }
                 
-                movieDetails != null -> {
-                    MovieDetailsContent(
+                movieDetails != null -> {                    MovieDetailsContent(
                         movieDetails = movieDetails!!,
-                        isSaved = savedMovies.any { it.movieId == movieId },                        onSaveClick = {
+                        isSaved = savedMovies.any { it.movieId == movieId },
+                        onSaveClick = {
                             if (savedMovies.any { it.movieId == movieId }) {
                                 movieViewModel.removeSavedMovie(movieId)
                             } else {
@@ -174,15 +174,15 @@ fun MovieDetailsScreen(
                                 )
                                 movieViewModel.saveMovie(movie)
                             }
-                        },
-                        onTrailerClick = { trailerUrl ->
+                        },                        onTrailerClick = { trailerUrl ->
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl))
                                 context.startActivity(intent)
                             } catch (e: Exception) {
                                 // Handle error - could show a toast or snackbar
                             }
-                        }
+                        },
+                        navController = navController
                     )
                 }
             }
@@ -195,7 +195,8 @@ fun MovieDetailsContent(
     movieDetails: MovieDetails,
     isSaved: Boolean,
     onSaveClick: () -> Unit,
-    onTrailerClick: (String) -> Unit
+    onTrailerClick: (String) -> Unit,
+    navController: NavController
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -425,13 +426,17 @@ fun MovieDetailsContent(
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-                
-                LazyRow(
+                  LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(movieDetails.cast) { castMember ->
-                        CastMemberCard(castMember = castMember)
+                        CastMemberCard(
+                            castMember = castMember,
+                            onClick = {
+                                navController.navigate("person_details/${castMember.id}")
+                            }
+                        )
                     }
                 }
                 
