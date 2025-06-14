@@ -443,10 +443,13 @@ fun MovieDetailsContent(
 
 @Composable
 fun CastMemberCard(
-    castMember: CastMember
+    castMember: CastMember,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = Modifier.width(120.dp),
+        modifier = Modifier
+            .width(120.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White.copy(alpha = 0.1f)

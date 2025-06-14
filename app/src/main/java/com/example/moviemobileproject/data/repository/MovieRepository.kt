@@ -4,8 +4,12 @@ import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.SavedMovie
 import com.example.moviemobileproject.data.model.TmdbCastMember
+import com.example.moviemobileproject.data.model.PersonDetails
+import com.example.moviemobileproject.data.model.PersonMovie
 import com.example.moviemobileproject.data.model.toMovie
 import com.example.moviemobileproject.data.model.toMovieDetails
+import com.example.moviemobileproject.data.model.toPersonDetails
+import com.example.moviemobileproject.data.model.toPersonMovie
 import com.example.moviemobileproject.data.network.NetworkModule
 import com.example.moviemobileproject.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
@@ -67,11 +71,13 @@ class MovieRepository {
             }
         } catch (e: Exception) {
             Result.success(getSampleMovies().filter { it.category == category })
-        }
-    }
-      private fun getCategoryGenreId(category: String): Int {
+        }    }
+      
+    private fun getCategoryGenreId(category: String): Int {
         return Constants.GENRE_MAPPING[category] ?: 18 // Default to Drama
-    }suspend fun searchMovies(query: String): Result<List<Movie>> {
+    }
+    
+    suspend fun searchMovies(query: String): Result<List<Movie>> {
         return try {
             // Try TMDB API first
             val tmdbResponse = tmdbApi.searchMovies(NetworkModule.TMDB_API_KEY, query)
@@ -128,8 +134,8 @@ class MovieRepository {
                 val snapshot = firestore.collection("users")
                     .document(userId)
                     .get()
-                    .await()
-                  val savedMovies = snapshot.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
+                    .await()                
+                    val savedMovies = snapshot.get("saved_movies") as? List<HashMap<String, Any>> ?: emptyList()
                 val movies = savedMovies.map { map ->
                     SavedMovie(
                         movieId = map["movieId"] as? String ?: "",
@@ -137,12 +143,6 @@ class MovieRepository {
                         imageUrl = map["imageUrl"] as? String ?: "",
                         category = map["category"] as? String ?: "",
                         description = map["description"] as? String ?: "",
-                        rating = (map["rating"] as? Number)?.toDouble() ?: 0.0,
-                        releaseYear = (map["releaseYear"] as? Number)?.toInt() ?: 0,
-                        director = map["director"] as? String ?: "",
-                        cast = (map["cast"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                        genre = (map["genre"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                        duration = (map["duration"] as? Number)?.toInt() ?: 0,
                         savedAt = (map["savedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
                     )
                 }
@@ -156,20 +156,13 @@ class MovieRepository {
     }
       suspend fun saveMovie(movie: Movie): Result<Unit> {
         val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
-        
-        return try {
+          return try {
             val savedMovie = SavedMovie(
                 movieId = movie.id,
                 title = movie.title,
                 imageUrl = movie.imageUrl,
                 category = movie.category,
-                description = movie.description,
-                rating = movie.rating,
-                releaseYear = movie.releaseYear,
-                director = movie.director,
-                cast = movie.cast,
-                genre = movie.genre,
-                duration = movie.duration
+                description = movie.description
             )
             
             firestore.collection("users")
@@ -358,6 +351,50 @@ class MovieRepository {
             // Convert to app model
             val details = movieDetails.toMovieDetails(trailerKey, cast)
             Result.success(details)
+            
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getPersonDetails(personId: String): Result<PersonDetails> {
+        return try {
+            val personIdInt = personId.toIntOrNull() ?: return Result.failure(Exception("Invalid person ID"))
+            
+            val response = tmdbApi.getPersonDetails(personIdInt, NetworkModule.TMDB_API_KEY)
+            if (!response.isSuccessful) {
+                return Result.failure(Exception("Failed to fetch person details"))
+            }
+            
+            val personDetails = response.body() ?: return Result.failure(Exception("Empty response"))
+            Result.success(personDetails.toPersonDetails())
+            
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getPersonMovieCredits(personId: String): Result<List<PersonMovie>> {
+        return try {
+            val personIdInt = personId.toIntOrNull() ?: return Result.failure(Exception("Invalid person ID"))
+            
+            val response = tmdbApi.getPersonMovieCredits(personIdInt, NetworkModule.TMDB_API_KEY)
+            if (!response.isSuccessful) {
+                return Result.failure(Exception("Failed to fetch person movie credits"))
+            }
+            
+            val credits = response.body() ?: return Result.failure(Exception("Empty response"))
+            
+            // Combine cast and crew movies, prioritize cast roles
+            val castMovies = credits.cast.map { it.toPersonMovie() }
+            val crewMovies = credits.crew.map { it.toPersonMovie() }
+            
+            // Sort by release date (most recent first) and take top 20
+            val allMovies = (castMovies + crewMovies)
+                .sortedByDescending { it.releaseDate }
+                .take(20)
+            
+            Result.success(allMovies)
             
         } catch (e: Exception) {
             Result.failure(e)

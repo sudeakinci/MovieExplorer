@@ -4,6 +4,8 @@ import com.example.moviemobileproject.data.model.TmdbMovieResponse
 import com.example.moviemobileproject.data.model.TmdbMovieDetailsExtended
 import com.example.moviemobileproject.data.model.TmdbVideosResponse
 import com.example.moviemobileproject.data.model.TmdbCreditsResponse
+import com.example.moviemobileproject.data.model.TmdbPersonDetails
+import com.example.moviemobileproject.data.model.TmdbPersonMovieCredits
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -75,4 +77,19 @@ interface TmdbApi {
         @Query("language") language: String = "en-US",
         @Query("page") page: Int = 1
     ): Response<TmdbMovieResponse>
+    
+    // Person endpoints
+    @GET("person/{person_id}")
+    suspend fun getPersonDetails(
+        @Path("person_id") personId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "en-US"
+    ): Response<TmdbPersonDetails>
+    
+    @GET("person/{person_id}/movie_credits")
+    suspend fun getPersonMovieCredits(
+        @Path("person_id") personId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String = "en-US"
+    ): Response<TmdbPersonMovieCredits>
 }

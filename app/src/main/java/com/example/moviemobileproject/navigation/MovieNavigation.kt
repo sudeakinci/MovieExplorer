@@ -8,6 +8,7 @@ import com.example.moviemobileproject.ui.screens.CategoryScreen
 import com.example.moviemobileproject.ui.screens.DashboardScreen
 import com.example.moviemobileproject.ui.screens.LoginScreen
 import com.example.moviemobileproject.ui.screens.MovieDetailsScreen
+import com.example.moviemobileproject.ui.screens.PersonDetailsScreen
 import com.example.moviemobileproject.ui.screens.ProfileScreen
 import com.example.moviemobileproject.ui.screens.SavedMoviesScreen
 import com.example.moviemobileproject.ui.screens.SearchScreen
@@ -59,6 +60,14 @@ fun MovieNavigation(
             MovieDetailsScreen(
                 navController = navController,
                 movieId = movieId
+            )
+        }
+        
+        composable("person_details/{personId}") { backStackEntry ->
+            val personId = backStackEntry.arguments?.getString("personId") ?: ""
+            PersonDetailsScreen(
+                navController = navController,
+                personId = personId
             )
         }
     }

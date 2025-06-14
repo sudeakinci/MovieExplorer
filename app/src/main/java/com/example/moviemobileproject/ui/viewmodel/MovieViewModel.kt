@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.SavedMovie
 import com.example.moviemobileproject.data.model.MovieDetails
+import com.example.moviemobileproject.data.model.PersonDetails
+import com.example.moviemobileproject.data.model.PersonMovie
 import com.example.moviemobileproject.data.repository.MovieRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +33,12 @@ class MovieViewModel : ViewModel() {
     
     private val _movieDetails = MutableStateFlow<MovieDetails?>(null)
     val movieDetails: StateFlow<MovieDetails?> = _movieDetails
+    
+    private val _personDetails = MutableStateFlow<PersonDetails?>(null)
+    val personDetails: StateFlow<PersonDetails?> = _personDetails
+    
+    private val _personMovies = MutableStateFlow<List<PersonMovie>>(emptyList())
+    val personMovies: StateFlow<List<PersonMovie>> = _personMovies
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -169,6 +177,41 @@ class MovieViewModel : ViewModel() {
     
     fun clearMovieDetails() {
         _movieDetails.value = null
+    }
+    
+    fun loadPersonDetails(personId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            movieRepository.getPersonDetails(personId)
+                .onSuccess { details ->
+                    _personDetails.value = details
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
+        }
+    }
+    
+    fun loadPersonMovieCredits(personId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            movieRepository.getPersonMovieCredits(personId)
+                .onSuccess { movies ->
+                    _personMovies.value = movies
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+            _isLoading.value = false
+        }
+    }
+    
+    fun clearPersonDetails() {
+        _personDetails.value = null
+        _personMovies.value = emptyList()
     }
     
     fun getMovieCategories(): List<String> {
