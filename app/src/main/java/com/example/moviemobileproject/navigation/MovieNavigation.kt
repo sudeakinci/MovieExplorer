@@ -62,8 +62,7 @@ fun MovieNavigation(
                 movieId = movieId
             )
         }
-        
-        composable("person_details/{personId}") { backStackEntry ->
+          composable("person_details/{personId}") { backStackEntry ->
             val personId = backStackEntry.arguments?.getString("personId") ?: ""
             PersonDetailsScreen(
                 navController = navController,
