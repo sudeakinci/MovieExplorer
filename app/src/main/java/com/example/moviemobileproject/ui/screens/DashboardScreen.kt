@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,21 +39,88 @@ fun DashboardScreen(
     movieViewModel: MovieViewModel = viewModel()
 ) {
     val popularMovies by movieViewModel.popularMovies.collectAsState()
+    val categoryMovies by movieViewModel.categoryMovies.collectAsState()
     val savedMovies by movieViewModel.savedMovies.collectAsState()
     val isLoading by movieViewModel.isLoading.collectAsState()
     val errorMessage by movieViewModel.errorMessage.collectAsState()
     val categories = movieViewModel.getMovieCategories()
     
-    Scaffold(
-        topBar = {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf("All Categories") }
+    
+    // Display movies based on selected category
+    val moviesToShow = if (selectedCategory == "All Categories") popularMovies else categoryMovies
+    
+    Scaffold(        topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "🎬 MovieApp",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Category Dropdown with Hamburger Menu Icon
+                        Box {
+                            IconButton(
+                                onClick = { expanded = true }
+                            ) {
+                                Icon(
+                                    Icons.Default.Menu,
+                                    contentDescription = "Categories menu",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier
+                                    .background(Color(0xFF1A1A2E))
+                                    .width(180.dp)
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "🎬 All Categories",
+                                            color = Color.White,
+                                            fontSize = 14.sp
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedCategory = "All Categories"
+                                        expanded = false
+                                        movieViewModel.loadPopularMovies()
+                                    }
+                                )
+                                
+                                categories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                "${getCategoryIcon(category)} $category",
+                                                color = Color.White,
+                                                fontSize = 14.sp
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedCategory = category
+                                            expanded = false
+                                            movieViewModel.loadMoviesByCategory(category)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        Text(
+                            "🎬 MovieApp",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 },
                 actions = {
                     IconButton(
@@ -94,28 +164,59 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Color.White)
-                }
-            } else {
-                Column(
+                }            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {                    // Popular Movies Section
-                    Text(
-                        text = "🔥 Popular Movies",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                        .padding(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    item(span = { GridItemSpan(2) }) {
+                        // Movies Section Header
+                        Text(
+                            text = if (selectedCategory == "All Categories") "🔥 Popular Movies" else "${getCategoryIcon(selectedCategory)} $selectedCategory Movies",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
                     
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.height(600.dp)
-                    ) {                        items(popularMovies) { movie ->
+                    if (moviesToShow.isEmpty() && !isLoading) {
+                        item(span = { GridItemSpan(2) }) {
+                            // Empty state
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(400.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "📽️",
+                                        fontSize = 48.sp
+                                    )
+                                    Text(
+                                        text = "No movies found",
+                                        fontSize = 18.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = if (selectedCategory == "All Categories") "Try refreshing the app" else "in $selectedCategory category",
+                                        fontSize = 14.sp,
+                                        color = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(moviesToShow) { movie ->
                             MovieCard(
                                 movie = movie,
                                 onCardClick = {
@@ -131,32 +232,6 @@ fun DashboardScreen(
                                 }
                             )
                         }
-                    }                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Categories Section
-                    Text(
-                        text = "📂 Categories",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.height(400.dp)
-                    ) {
-                        items(categories) { category ->
-                            CategoryCard(
-                                categoryName = category,
-                                onClick = {
-                                    navController.navigate(Screen.Category.createRoute(category))
-                                }
-                            )
-                        }
                     }
                 }
             }
@@ -164,33 +239,4 @@ fun DashboardScreen(
     }
 }
 
-@Composable
-fun CategoryCard(
-    categoryName: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.1f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = getCategoryIcon(categoryName) + " " + categoryName,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
-        }
-    }
-}
 
