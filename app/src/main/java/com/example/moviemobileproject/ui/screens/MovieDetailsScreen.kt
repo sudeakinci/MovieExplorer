@@ -489,7 +489,8 @@ fun CastMemberCard(
 ) {
     Card(
         modifier = Modifier
-            .width(120.dp)
+            .width(140.dp)
+            .height(180.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -497,8 +498,11 @@ fun CastMemberCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {            // Actor Image
             AsyncImage(
                 model = castMember.profilePath ?: "",
@@ -520,8 +524,11 @@ fun CastMemberCard(
                 color = Color.White,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+            
+            Spacer(modifier = Modifier.height(4.dp))
             
             // Character Name
             Text(
@@ -531,7 +538,7 @@ fun CastMemberCard(
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp)
+                modifier = Modifier.weight(1f, fill = false)
             )
         }
     }
