@@ -3,6 +3,7 @@ package com.example.moviemobileproject.data.repository
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.Review
 import com.example.moviemobileproject.data.model.TmdbCastMember
 import com.example.moviemobileproject.data.model.PersonDetails
 import com.example.moviemobileproject.data.model.PersonMovie
@@ -14,6 +15,8 @@ import com.example.moviemobileproject.data.network.NetworkModule
 import com.example.moviemobileproject.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 import javax.inject.Singleton
 
@@ -402,6 +405,102 @@ class MovieRepository {
             
             Result.success(allMovies)
             
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }    // Review Management Methods
+    suspend fun addMovieReview(movieId: String, rating: Float, comment: String): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        val user = auth.currentUser ?: return Result.failure(Exception("User not found"))
+        
+        return try {
+            println("DEBUG: Adding review for movieId: $movieId")
+            
+            // Get user name from Firestore if displayName is null
+            val userName = if (user.displayName.isNullOrBlank()) {
+                try {
+                    val userDoc = firestore.collection("users").document(userId).get().await()
+                    userDoc.getString("name") ?: "Anonymous"
+                } catch (e: Exception) {
+                    "Anonymous"
+                }
+            } else {
+                user.displayName!!
+            }
+            
+            val review = Review(
+                movieId = movieId,
+                userId = userId,
+                userName = userName,
+                userEmail = user.email ?: "",
+                rating = rating,
+                comment = comment,
+                timestamp = System.currentTimeMillis()
+            )
+            
+            println("DEBUG: Review object created: $review")
+            
+            firestore.collection("movie_reviews")
+                .add(review)
+                .await()
+            
+            println("DEBUG: Review added successfully")
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("DEBUG: Error adding review: ${e.message}")
+            Result.failure(e)
+        }
+    }    suspend fun getMovieReviews(movieId: String): Result<List<Review>> {
+        return try {
+            println("DEBUG: Fetching reviews for movieId: $movieId")
+            
+            // First, let's get ALL reviews to debug
+            val allSnapshot = firestore.collection("movie_reviews")
+                .get()
+                .await()
+            
+            println("DEBUG: Total reviews in database: ${allSnapshot.documents.size}")
+            allSnapshot.documents.forEach { doc ->
+                println("DEBUG: All Reviews - ID: ${doc.id}, MovieId: '${doc.getString("movieId")}', Comment: '${doc.getString("comment")}'")
+            }
+            
+            val snapshot = firestore.collection("movie_reviews")
+                .whereEqualTo("movieId", movieId)
+                .get()
+                .await()
+            
+            println("DEBUG: Found ${snapshot.documents.size} review documents for movieId: '$movieId'")
+            
+            val reviews = snapshot.documents.mapNotNull { doc ->
+                println("DEBUG: Document ID: ${doc.id}, MovieId: ${doc.getString("movieId")}")
+                doc.toObject(Review::class.java)?.copy(id = doc.id)
+            }.sortedByDescending { it.timestamp } // Sort locally instead
+            
+            println("DEBUG: Parsed ${reviews.size} reviews")
+            
+            Result.success(reviews)
+        } catch (e: Exception) {
+            println("DEBUG: Error fetching reviews: ${e.message}")
+            // Return empty list instead of error to avoid crashes
+            Result.success(emptyList())
+        }
+    }
+      suspend fun updateReviewLike(reviewId: String, isLike: Boolean): Result<Unit> {
+        return try {
+            // Check if user is authenticated
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                return Result.failure(Exception("User not authenticated"))
+            }
+            
+            val field = if (isLike) "likes" else "dislikes"
+            firestore.collection("movie_reviews")
+                .document(reviewId)
+                .update(field, FieldValue.increment(1))
+                .await()
+            
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

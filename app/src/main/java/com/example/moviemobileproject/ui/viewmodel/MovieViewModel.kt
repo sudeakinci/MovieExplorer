@@ -7,6 +7,7 @@ import com.example.moviemobileproject.data.model.SavedMovie
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.PersonDetails
 import com.example.moviemobileproject.data.model.PersonMovie
+import com.example.moviemobileproject.data.model.Review
 import com.example.moviemobileproject.data.repository.MovieRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,9 @@ class MovieViewModel : ViewModel() {
     
     private val _personMovies = MutableStateFlow<List<PersonMovie>>(emptyList())
     val personMovies: StateFlow<List<PersonMovie>> = _personMovies
+    
+    private val _movieReviews = MutableStateFlow<List<Review>>(emptyList())
+    val movieReviews: StateFlow<List<Review>> = _movieReviews
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -216,5 +220,49 @@ class MovieViewModel : ViewModel() {
     
     fun getMovieCategories(): List<String> {
         return movieRepository.getMovieCategories()
+    }
+      // Review Management Methods
+     fun loadMovieReviews(movieId: String) {
+        viewModelScope.launch {
+            movieRepository.getMovieReviews(movieId)
+                .onSuccess { reviews ->
+                    _movieReviews.value = reviews
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    // Don't show error for reviews, just keep empty list
+                    _movieReviews.value = emptyList()
+                }
+        }
+    }
+    
+    fun addReview(movieId: String, rating: Float, comment: String) {
+        viewModelScope.launch {
+            movieRepository.addMovieReview(movieId, rating, comment)
+                .onSuccess {
+                    loadMovieReviews(movieId) // Refresh reviews
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+        }
+    }
+    
+    fun likeReview(reviewId: String) {
+        viewModelScope.launch {
+            movieRepository.updateReviewLike(reviewId, true)
+                .onSuccess {
+                    // Refresh reviews to show updated like count
+                    val currentMovieId = _movieDetails.value?.id
+                    if (currentMovieId != null) {
+                        loadMovieReviews(currentMovieId.toString())
+                    }
+                }
+                .onFailure { exception ->
+                    // Don't show error for like failures
+                    // _errorMessage.value = exception.message
+                }
+        }
     }
 }

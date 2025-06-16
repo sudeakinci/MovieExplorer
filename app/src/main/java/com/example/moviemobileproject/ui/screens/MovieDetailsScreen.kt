@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.moviemobileproject.ui.components.ReviewSection
+import com.example.moviemobileproject.ui.components.AddReviewDialog
 import com.example.moviemobileproject.data.model.CastMember
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.ui.viewmodel.MovieViewModel
@@ -43,15 +45,16 @@ fun MovieDetailsScreen(
     navController: NavController,
     movieId: String,
     movieViewModel: MovieViewModel = viewModel()
-) {
-    val movieDetails by movieViewModel.movieDetails.collectAsState()
+) {    val movieDetails by movieViewModel.movieDetails.collectAsState()
+    val reviews by movieViewModel.movieReviews.collectAsState()
     val isLoading by movieViewModel.isLoading.collectAsState()
     val errorMessage by movieViewModel.errorMessage.collectAsState()
     val savedMovies by movieViewModel.savedMovies.collectAsState()
     val context = LocalContext.current
-    
     LaunchedEffect(movieId) {
+        println("DEBUG: MovieDetailsScreen loading for movieId: '$movieId'")
         movieViewModel.loadMovieDetails(movieId)
+        movieViewModel.loadMovieReviews(movieId)
     }
     
     // Clear movie details when leaving the screen
@@ -144,9 +147,9 @@ fun MovieDetailsScreen(
                         }
                     }
                 }
-                
-                movieDetails != null -> {                    MovieDetailsContent(
+                  movieDetails != null -> {                    MovieDetailsContent(
                         movieDetails = movieDetails!!,
+                        reviews = reviews,
                         isSaved = savedMovies.any { it.movieId == movieId },
                         onSaveClick = {
                             if (savedMovies.any { it.movieId == movieId }) {
@@ -182,6 +185,12 @@ fun MovieDetailsScreen(
                                 // Handle error - could show a toast or snackbar
                             }
                         },
+                        onAddReview = { rating, comment ->
+                            movieViewModel.addReview(movieId, rating, comment)
+                        },
+                        onLikeReview = { reviewId ->
+                            movieViewModel.likeReview(reviewId)
+                        },
                         navController = navController
                     )
                 }
@@ -193,9 +202,12 @@ fun MovieDetailsScreen(
 @Composable
 fun MovieDetailsContent(
     movieDetails: MovieDetails,
+    reviews: List<com.example.moviemobileproject.data.model.Review>,
     isSaved: Boolean,
     onSaveClick: () -> Unit,
     onTrailerClick: (String) -> Unit,
+    onAddReview: (Float, String) -> Unit,
+    onLikeReview: (String) -> Unit,
     navController: NavController
 ) {
     LazyColumn(
@@ -437,11 +449,35 @@ fun MovieDetailsContent(
                                 navController.navigate("person_details/${castMember.id}")
                             }
                         )
-                    }
-                }
+                    }                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
+        
+        // Reviews Section
+        item {
+            var showAddReviewDialog by remember { mutableStateOf(false) }
+            
+            ReviewSection(
+                reviews = reviews,
+                onAddReviewClick = { showAddReviewDialog = true },
+                onLikeReview = onLikeReview,
+                modifier = Modifier.padding(16.dp)
+            )
+            
+            // Add Review Dialog
+            if (showAddReviewDialog) {
+                AddReviewDialog(
+                    onDismiss = { showAddReviewDialog = false },
+                    onSubmit = { rating, comment ->
+                        onAddReview(rating, comment)
+                        showAddReviewDialog = false
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
