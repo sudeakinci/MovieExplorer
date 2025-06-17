@@ -400,23 +400,17 @@ fun MovieDetailsContent(
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
-                        
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                           // Add to Watched Button
                         IconButton(
                             onClick = onAddToWatched,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(
-                                    if (isWatched) Color.Green.copy(alpha = 0.8f) else Color.Green.copy(alpha = 0.2f),
-                                    CircleShape
-                                )
+                            modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
                                 imageVector = if (isWatched) Icons.Default.Check else Icons.Default.Add,
-                                contentDescription = if (isWatched) "Added to Watched" else "Add to Watched",
-                                tint = if (isWatched) Color.White else Color.Green,
-                                modifier = Modifier.size(18.dp)
+                                contentDescription = if (isWatched) "Remove from watched" else "Add to watched",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
