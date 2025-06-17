@@ -2,6 +2,7 @@ package com.example.moviemobileproject.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
@@ -56,11 +59,20 @@ fun MovieDetailsScreen(
     val isLoading by movieViewModel.isLoading.collectAsState()
     val errorMessage by movieViewModel.errorMessage.collectAsState()
     val savedMovies by movieViewModel.savedMovies.collectAsState()
+    val watchedMovies by movieViewModel.watchedMovies.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(movieId) {
         println("DEBUG: MovieDetailsScreen loading for movieId: '$movieId'")
         movieViewModel.loadMovieDetails(movieId)
         movieViewModel.loadMovieReviews(movieId)
+    }
+    
+    // Show error toast when there's an error
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            movieViewModel.clearError() // Clear the error after showing
+        }
     }
     
     // Clear movie details when leaving the screen
@@ -154,12 +166,12 @@ fun MovieDetailsScreen(
                             )
                         }
                     }
-                }
-                  movieDetails != null -> {                    MovieDetailsContent(
+                }                movieDetails != null -> {                    MovieDetailsContent(
                         movieDetails = movieDetails!!,
                         reviews = reviews,
                         userVotes = userVotes,
                         isSaved = savedMovies.any { it.movieId == movieId },
+                        isWatched = watchedMovies.any { it.movieId == movieId },
                         onSaveClick = {
                             if (savedMovies.any { it.movieId == movieId }) {
                                 movieViewModel.removeSavedMovie(movieId)
@@ -185,6 +197,34 @@ fun MovieDetailsScreen(
                                     cast = movieDetails!!.cast.map { it.name }
                                 )
                                 movieViewModel.saveMovie(movie)
+                            }
+                        },                        onAddToWatched = {
+                            if (watchedMovies.any { it.movieId == movieId }) {
+                                // Remove from watched movies
+                                movieViewModel.removeWatchedMovie(movieId)
+                            } else {
+                                // Add to watched movies
+                                val releaseYear = if (movieDetails!!.releaseDate.isNotEmpty()) {
+                                    try {
+                                        movieDetails!!.releaseDate.substring(0, 4).toInt()
+                                    } catch (e: Exception) { 0 }
+                                } else { 0 }
+                                
+                                val movie = com.example.moviemobileproject.data.model.Movie(
+                                    id = movieId,
+                                    title = movieDetails!!.title,
+                                    imageUrl = movieDetails!!.posterUrl,
+                                    category = movieDetails!!.genres.firstOrNull() ?: "Unknown",
+                                    isPopular = false,
+                                    description = movieDetails!!.overview,
+                                    rating = movieDetails!!.rating,
+                                    releaseYear = releaseYear,
+                                    duration = movieDetails!!.runtime,
+                                    genre = movieDetails!!.genres,
+                                    director = "",
+                                    cast = movieDetails!!.cast.map { it.name }
+                                )
+                                movieViewModel.addWatchedMovie(movie)
                             }
                         },
                         onTrailerClick = { trailerUrl ->
@@ -217,7 +257,9 @@ fun MovieDetailsContent(
     reviews: List<com.example.moviemobileproject.data.model.Review>,
     userVotes: Map<String, com.example.moviemobileproject.data.model.VoteType>,
     isSaved: Boolean,
+    isWatched: Boolean,
     onSaveClick: () -> Unit,
+    onAddToWatched: () -> Unit,
     onTrailerClick: (String) -> Unit,
     onAddReview: (Float, String) -> Unit,
     onVoteReview: (String, com.example.moviemobileproject.data.model.VoteType) -> Unit,
@@ -330,8 +372,7 @@ fun MovieDetailsContent(
             // Movie Information
             Column(
                 modifier = Modifier.padding(16.dp)
-            ) {
-                // Rating and Runtime
+            ) {                // Rating and Runtime
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -359,6 +400,25 @@ fun MovieDetailsContent(
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.7f)
                         )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                          // Add to Watched Button
+                        IconButton(
+                            onClick = onAddToWatched,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    if (isWatched) Color.Green.copy(alpha = 0.8f) else Color.Green.copy(alpha = 0.2f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = if (isWatched) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = if (isWatched) "Added to Watched" else "Add to Watched",
+                                tint = if (isWatched) Color.White else Color.Green,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                     
                     // Runtime

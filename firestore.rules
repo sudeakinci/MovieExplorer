@@ -1,9 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users collection - users can only read/write their own data
+  match /databases/{database}/documents {    // Users collection - users can only read/write their own data
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Special validation for watched_movies to prevent duplicates
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && (
+          // Allow if not updating watched_movies
+          !request.writeFields.hasAny(['watched_movies']) ||
+          // Or if updating watched_movies, ensure no duplicates
+          (request.writeFields.hasOnly(['watched_movies']) && 
+           validateNoDuplicateWatchedMovies(request.resource.data.watched_movies))
+        );
+    }
+    
+    // Function to validate no duplicate movie IDs in watched_movies
+    function validateNoDuplicateWatchedMovies(watchedMovies) {
+      let movieIds = watchedMovies.map(movie, movie.movieId);
+      return movieIds.toSet().size() == movieIds.size();
     }
     
     // Movie reviews collection

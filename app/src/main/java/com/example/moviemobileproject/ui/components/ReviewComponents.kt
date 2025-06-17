@@ -314,13 +314,12 @@ fun ReviewCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddReviewDialog(
     onDismiss: () -> Unit,
     onSubmit: (Float, String) -> Unit
 ) {
-    var rating by remember { mutableStateOf(5f) }
+    var rating by remember { mutableFloatStateOf(5f) }
     var comment by remember { mutableStateOf("") }
     
     Dialog(onDismissRequest = onDismiss) {

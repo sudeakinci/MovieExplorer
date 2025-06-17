@@ -13,6 +13,7 @@ import com.example.moviemobileproject.ui.screens.ProfileScreen
 import com.example.moviemobileproject.ui.screens.SavedMoviesScreen
 import com.example.moviemobileproject.ui.screens.SearchScreen
 import com.example.moviemobileproject.ui.screens.SignupScreen
+import com.example.moviemobileproject.ui.screens.WatchedMoviesScreen
 import com.example.moviemobileproject.ui.viewmodel.AuthViewModel
 
 @Composable
@@ -51,7 +52,12 @@ fun MovieNavigation(
         composable(Screen.SavedMovies.route) {
             SavedMoviesScreen(navController = navController)
         }
-          composable(Screen.Profile.route) {
+        
+        composable(Screen.WatchedMovies.route) {
+            WatchedMoviesScreen(navController = navController)
+        }
+        
+        composable(Screen.Profile.route) {
             ProfileScreen(navController = navController, authViewModel = authViewModel)
         }
         

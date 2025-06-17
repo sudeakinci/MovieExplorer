@@ -3,6 +3,7 @@ package com.example.moviemobileproject.data.repository
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.WatchedMovie
 import com.example.moviemobileproject.data.model.Review
 import com.example.moviemobileproject.data.model.TmdbCastMember
 import com.example.moviemobileproject.data.model.PersonDetails
@@ -187,6 +188,100 @@ class MovieRepository {
             firestore.collection("users")
                 .document(userId)
                 .update("saved_movies", updatedMovies)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }    }
+    
+    // Watched Movies Methods
+    suspend fun getWatchedMovies(): Result<List<WatchedMovie>> {
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            return try {
+                val snapshot = firestore.collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+                
+                val watchedMovies = snapshot.get("watched_movies") as? List<HashMap<String, Any>> ?: emptyList()
+                val movies = watchedMovies.map { map ->
+                    WatchedMovie(
+                        movieId = map["movieId"] as? String ?: "",
+                        title = map["title"] as? String ?: "",
+                        imageUrl = map["imageUrl"] as? String ?: "",
+                        category = map["category"] as? String ?: "",
+                        description = map["description"] as? String ?: "",
+                        rating = (map["rating"] as? Number)?.toDouble() ?: 0.0,
+                        releaseYear = (map["releaseYear"] as? Number)?.toInt() ?: 0,
+                        watchedAt = (map["watchedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                    )
+                }
+                Result.success(movies)
+            } catch (e: Exception) {
+                Result.success(emptyList())
+            }
+        } else {
+            return Result.success(emptyList())
+        }
+    }
+      suspend fun addWatchedMovie(movie: Movie): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        
+        return try {
+            // First check if movie is already in watched list
+            val userDoc = firestore.collection("users").document(userId).get().await()
+            val existingWatchedMovies = userDoc.get("watched_movies") as? List<HashMap<String, Any>> ?: emptyList()
+            
+            // Check if movie already exists in watched list
+            val movieAlreadyWatched = existingWatchedMovies.any { map ->
+                map["movieId"] as? String == movie.id
+            }
+            
+            if (movieAlreadyWatched) {
+                return Result.failure(Exception("Movie is already in your watched list"))
+            }
+            
+            val watchedMovie = WatchedMovie(
+                movieId = movie.id,
+                title = movie.title,
+                imageUrl = movie.imageUrl,
+                category = movie.category,
+                description = movie.description,
+                rating = movie.rating,
+                releaseYear = movie.releaseYear
+            )
+            
+            // Add to watched movies using arrayUnion (this also prevents duplicates automatically)
+            firestore.collection("users")
+                .document(userId)
+                .update("watched_movies", FieldValue.arrayUnion(watchedMovie))
+                .await()
+            
+            // Remove from saved movies if it exists
+            removeSavedMovie(movie.id)
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun removeWatchedMovie(movieId: String): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        
+        return try {
+            val userDoc = firestore.collection("users").document(userId).get().await()
+            val watchedMovies = userDoc.get("watched_movies") as? List<HashMap<String, Any>> ?: emptyList()
+            
+            val updatedMovies = watchedMovies.filter { map ->
+                map["movieId"] as? String != movieId
+            }
+            
+            firestore.collection("users")
+                .document(userId)
+                .update("watched_movies", updatedMovies)
                 .await()
             
             Result.success(Unit)

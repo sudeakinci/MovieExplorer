@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.moviemobileproject.data.model.Movie
 import com.example.moviemobileproject.data.model.SavedMovie
+import com.example.moviemobileproject.data.model.WatchedMovie
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.PersonDetails
 import com.example.moviemobileproject.data.model.PersonMovie
@@ -26,9 +27,11 @@ class MovieViewModel : ViewModel() {
     
     private val _searchResults = MutableStateFlow<List<Movie>>(emptyList())
     val searchResults: StateFlow<List<Movie>> = _searchResults
-    
-    private val _savedMovies = MutableStateFlow<List<SavedMovie>>(emptyList())
+      private val _savedMovies = MutableStateFlow<List<SavedMovie>>(emptyList())
     val savedMovies: StateFlow<List<SavedMovie>> = _savedMovies
+    
+    private val _watchedMovies = MutableStateFlow<List<WatchedMovie>>(emptyList())
+    val watchedMovies: StateFlow<List<WatchedMovie>> = _watchedMovies
     
     private val _allMovies = MutableStateFlow<List<Movie>>(emptyList())
     val allMovies: StateFlow<List<Movie>> = _allMovies
@@ -53,10 +56,10 @@ class MovieViewModel : ViewModel() {
     
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
-    
-    init {
+      init {
         loadPopularMovies()
         loadSavedMovies()
+        loadWatchedMovies()
     }
     
     fun loadPopularMovies() {
@@ -138,6 +141,48 @@ class MovieViewModel : ViewModel() {
             movieRepository.removeSavedMovie(movieId)
                 .onSuccess {
                     loadSavedMovies() // Refresh saved movies
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+        }    }
+    
+    // Watched Movies Methods
+    fun loadWatchedMovies() {
+        viewModelScope.launch {
+            movieRepository.getWatchedMovies()
+                .onSuccess { movies ->
+                    _watchedMovies.value = movies
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+        }
+    }
+      fun addWatchedMovie(movie: Movie) {
+        viewModelScope.launch {
+            movieRepository.addWatchedMovie(movie)
+                .onSuccess {
+                    loadWatchedMovies() // Refresh watched movies
+                    loadSavedMovies() // Refresh saved movies since it might be removed
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    // Show specific error message for duplicate movies
+                    _errorMessage.value = when {
+                        exception.message?.contains("already in your watched list") == true -> 
+                            "This movie is already in your watched list!"
+                        else -> exception.message ?: "Failed to add movie to watched list"
+                    }
+                }
+        }
+    }
+    
+    fun removeWatchedMovie(movieId: String) {
+        viewModelScope.launch {
+            movieRepository.removeWatchedMovie(movieId)
+                .onSuccess {
+                    loadWatchedMovies() // Refresh watched movies
                 }
                 .onFailure { exception ->
                     _errorMessage.value = exception.message
