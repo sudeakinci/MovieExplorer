@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.moviemobileproject.ui.components.BottomNavigationBar
 import com.example.moviemobileproject.ui.components.ReviewSection
 import com.example.moviemobileproject.ui.components.AddReviewDialog
 import com.example.moviemobileproject.data.model.CastMember
@@ -87,11 +88,13 @@ fun MovieDetailsScreen(
                             tint = Color.White
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
+                },                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF1A1A2E)
                 )
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
         Box(

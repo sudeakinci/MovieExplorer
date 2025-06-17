@@ -34,6 +34,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.moviemobileproject.data.model.PersonDetails
 import com.example.moviemobileproject.data.model.PersonMovie
+import com.example.moviemobileproject.ui.components.BottomNavigationBar
 import com.example.moviemobileproject.ui.viewmodel.MovieViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -85,11 +86,13 @@ fun PersonDetailsScreen(
                             tint = Color.White
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
+                },                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF1A1A2E)
                 )
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
         Box(
