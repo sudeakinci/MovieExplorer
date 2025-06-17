@@ -8,6 +8,7 @@ import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.PersonDetails
 import com.example.moviemobileproject.data.model.PersonMovie
 import com.example.moviemobileproject.data.model.Review
+import com.example.moviemobileproject.data.model.VoteType
 import com.example.moviemobileproject.data.repository.MovieRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +44,9 @@ class MovieViewModel : ViewModel() {
     
     private val _movieReviews = MutableStateFlow<List<Review>>(emptyList())
     val movieReviews: StateFlow<List<Review>> = _movieReviews
+    
+    private val _userVotes = MutableStateFlow<Map<String, VoteType>>(emptyMap())
+    val userVotes: StateFlow<Map<String, VoteType>> = _userVotes
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -220,18 +224,35 @@ class MovieViewModel : ViewModel() {
     
     fun getMovieCategories(): List<String> {
         return movieRepository.getMovieCategories()
-    }
-      // Review Management Methods
-     fun loadMovieReviews(movieId: String) {
+    }    // Review Management Methods
+    fun loadMovieReviews(movieId: String) {
         viewModelScope.launch {
             movieRepository.getMovieReviews(movieId)
                 .onSuccess { reviews ->
                     _movieReviews.value = reviews
                     _errorMessage.value = null
+                    
+                    // Load user votes for these reviews
+                    if (reviews.isNotEmpty()) {
+                        loadUserVotes(reviews.map { it.id })
+                    }
                 }
                 .onFailure { exception ->
                     // Don't show error for reviews, just keep empty list
                     _movieReviews.value = emptyList()
+                    _userVotes.value = emptyMap()
+                }
+        }
+    }
+    
+    private fun loadUserVotes(reviewIds: List<String>) {
+        viewModelScope.launch {
+            movieRepository.getUserVotesForReviews(reviewIds)
+                .onSuccess { votes ->
+                    _userVotes.value = votes
+                }
+                .onFailure {
+                    _userVotes.value = emptyMap()
                 }
         }
     }
@@ -249,20 +270,28 @@ class MovieViewModel : ViewModel() {
         }
     }
     
-    fun likeReview(reviewId: String) {
+    fun voteReview(reviewId: String, voteType: VoteType) {
         viewModelScope.launch {
-            movieRepository.updateReviewLike(reviewId, true)
+            movieRepository.updateReviewVote(reviewId, voteType)
                 .onSuccess {
-                    // Refresh reviews to show updated like count
+                    // Refresh reviews to show updated counts
                     val currentMovieId = _movieDetails.value?.id
                     if (currentMovieId != null) {
                         loadMovieReviews(currentMovieId.toString())
                     }
                 }
                 .onFailure { exception ->
-                    // Don't show error for like failures
+                    // Don't show error for vote failures
                     // _errorMessage.value = exception.message
                 }
         }
+    }
+      // Keep for backward compatibility
+    fun likeReview(reviewId: String) {
+        voteReview(reviewId, VoteType.LIKE)
+    }
+    
+    fun dislikeReview(reviewId: String) {
+        voteReview(reviewId, VoteType.DISLIKE)
     }
 }

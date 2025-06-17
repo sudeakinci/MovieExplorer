@@ -9,6 +9,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,14 +24,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.moviemobileproject.data.model.Review
+import com.example.moviemobileproject.data.model.VoteType
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun ReviewSection(
     reviews: List<Review>,
+    userVotes: Map<String, VoteType>,
     onAddReviewClick: () -> Unit,
-    onLikeReview: (String) -> Unit,
+    onVoteReview: (String, VoteType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Debug log
@@ -101,11 +106,11 @@ fun ReviewSection(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.height(400.dp)
-            ) {
-                items(reviews) { review ->
+            ) {                items(reviews) { review ->
                     ReviewCard(
                         review = review,
-                        onLike = { onLikeReview(review.id) }
+                        userVote = userVotes[review.id] ?: VoteType.NONE,
+                        onVote = { voteType -> onVoteReview(review.id, voteType) }
                     )
                 }
             }
@@ -116,7 +121,8 @@ fun ReviewSection(
 @Composable
 fun ReviewCard(
     review: Review,
-    onLike: () -> Unit
+    userVote: VoteType,
+    onVote: (VoteType) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -179,27 +185,54 @@ fun ReviewCard(
             )
             
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Like button
+              // Like and Dislike buttons
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                IconButton(
-                    onClick = onLike,
-                    modifier = Modifier.size(32.dp)
+                // Like button
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.ThumbUp,
-                        contentDescription = "Like",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(16.dp)
+                    IconButton(
+                        onClick = { onVote(VoteType.LIKE) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (userVote == VoteType.LIKE) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                            contentDescription = "Like",
+                            tint = if (userVote == VoteType.LIKE) Color(0xFF4CAF50) else Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = review.likes.toString(),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
-                Text(
-                    text = review.likes.toString(),
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
+                
+                // Dislike button
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { onVote(VoteType.DISLIKE) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (userVote == VoteType.DISLIKE) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
+                            contentDescription = "Dislike",
+                            tint = if (userVote == VoteType.DISLIKE) Color(0xFFF44336) else Color.White.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Text(
+                        text = review.dislikes.toString(),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }

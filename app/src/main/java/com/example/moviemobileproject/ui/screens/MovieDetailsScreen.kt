@@ -38,6 +38,7 @@ import com.example.moviemobileproject.ui.components.ReviewSection
 import com.example.moviemobileproject.ui.components.AddReviewDialog
 import com.example.moviemobileproject.data.model.CastMember
 import com.example.moviemobileproject.data.model.MovieDetails
+import com.example.moviemobileproject.data.model.VoteType
 import com.example.moviemobileproject.ui.viewmodel.MovieViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +49,7 @@ fun MovieDetailsScreen(
     movieViewModel: MovieViewModel = viewModel()
 ) {    val movieDetails by movieViewModel.movieDetails.collectAsState()
     val reviews by movieViewModel.movieReviews.collectAsState()
+    val userVotes by movieViewModel.userVotes.collectAsState()
     val isLoading by movieViewModel.isLoading.collectAsState()
     val errorMessage by movieViewModel.errorMessage.collectAsState()
     val savedMovies by movieViewModel.savedMovies.collectAsState()
@@ -153,6 +155,7 @@ fun MovieDetailsScreen(
                   movieDetails != null -> {                    MovieDetailsContent(
                         movieDetails = movieDetails!!,
                         reviews = reviews,
+                        userVotes = userVotes,
                         isSaved = savedMovies.any { it.movieId == movieId },
                         onSaveClick = {
                             if (savedMovies.any { it.movieId == movieId }) {
@@ -180,7 +183,8 @@ fun MovieDetailsScreen(
                                 )
                                 movieViewModel.saveMovie(movie)
                             }
-                        },                        onTrailerClick = { trailerUrl ->
+                        },
+                        onTrailerClick = { trailerUrl ->
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl))
                                 context.startActivity(intent)
@@ -191,8 +195,8 @@ fun MovieDetailsScreen(
                         onAddReview = { rating, comment ->
                             movieViewModel.addReview(movieId, rating, comment)
                         },
-                        onLikeReview = { reviewId ->
-                            movieViewModel.likeReview(reviewId)
+                        onVoteReview = { reviewId, voteType ->
+                            movieViewModel.voteReview(reviewId, voteType)
                         },
                         navController = navController
                     )
@@ -206,11 +210,12 @@ fun MovieDetailsScreen(
 fun MovieDetailsContent(
     movieDetails: MovieDetails,
     reviews: List<com.example.moviemobileproject.data.model.Review>,
+    userVotes: Map<String, com.example.moviemobileproject.data.model.VoteType>,
     isSaved: Boolean,
     onSaveClick: () -> Unit,
     onTrailerClick: (String) -> Unit,
     onAddReview: (Float, String) -> Unit,
-    onLikeReview: (String) -> Unit,
+    onVoteReview: (String, com.example.moviemobileproject.data.model.VoteType) -> Unit,
     navController: NavController
 ) {
     LazyColumn(
@@ -461,11 +466,11 @@ fun MovieDetailsContent(
         // Reviews Section
         item {
             var showAddReviewDialog by remember { mutableStateOf(false) }
-            
-            ReviewSection(
+              ReviewSection(
                 reviews = reviews,
+                userVotes = userVotes,
                 onAddReviewClick = { showAddReviewDialog = true },
-                onLikeReview = onLikeReview,
+                onVoteReview = onVoteReview,
                 modifier = Modifier.padding(16.dp)
             )
             

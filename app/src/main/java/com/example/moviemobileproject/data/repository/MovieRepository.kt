@@ -485,24 +485,165 @@ class MovieRepository {
             // Return empty list instead of error to avoid crashes
             Result.success(emptyList())
         }
-    }
-      suspend fun updateReviewLike(reviewId: String, isLike: Boolean): Result<Unit> {
+    }    // User Vote Management Methods
+    suspend fun getUserVoteForReview(reviewId: String): Result<com.example.moviemobileproject.data.model.VoteType> {
         return try {
-            // Check if user is authenticated
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                return Result.success(com.example.moviemobileproject.data.model.VoteType.NONE)
+            }
+            
+            val voteSnapshot = firestore.collection("review_votes")
+                .whereEqualTo("reviewId", reviewId)
+                .whereEqualTo("userId", currentUser.uid)
+                .get()
+                .await()
+            
+            if (voteSnapshot.documents.isNotEmpty()) {
+                val voteDoc = voteSnapshot.documents.first()
+                val voteTypeString = voteDoc.getString("voteType") ?: "NONE"
+                val voteType = com.example.moviemobileproject.data.model.VoteType.valueOf(voteTypeString)
+                Result.success(voteType)
+            } else {
+                Result.success(com.example.moviemobileproject.data.model.VoteType.NONE)
+            }
+        } catch (e: Exception) {
+            Result.success(com.example.moviemobileproject.data.model.VoteType.NONE)
+        }
+    }
+    
+    suspend fun updateReviewVote(reviewId: String, newVoteType: com.example.moviemobileproject.data.model.VoteType): Result<Unit> {
+        return try {
             val currentUser = auth.currentUser
             if (currentUser == null) {
                 return Result.failure(Exception("User not authenticated"))
             }
             
-            val field = if (isLike) "likes" else "dislikes"
-            firestore.collection("movie_reviews")
-                .document(reviewId)
-                .update(field, FieldValue.increment(1))
-                .await()
+            // Get current user's vote
+            val currentVoteResult = getUserVoteForReview(reviewId)
+            val currentVote = currentVoteResult.getOrNull() ?: com.example.moviemobileproject.data.model.VoteType.NONE
+            
+            // If same vote, remove it (toggle off)
+            val finalVoteType = if (currentVote == newVoteType) {
+                com.example.moviemobileproject.data.model.VoteType.NONE
+            } else {
+                newVoteType
+            }
+            
+            // Update vote in review_votes collection
+            val voteId = "${reviewId}_${currentUser.uid}"
+            
+            if (finalVoteType == com.example.moviemobileproject.data.model.VoteType.NONE) {
+                // Remove vote
+                firestore.collection("review_votes")
+                    .document(voteId)
+                    .delete()
+                    .await()
+            } else {
+                // Add or update vote
+                val reviewVote = com.example.moviemobileproject.data.model.ReviewVote(
+                    id = voteId,
+                    reviewId = reviewId,
+                    userId = currentUser.uid,
+                    voteType = finalVoteType,
+                    timestamp = System.currentTimeMillis()
+                )
+                
+                firestore.collection("review_votes")
+                    .document(voteId)
+                    .set(reviewVote)
+                    .await()
+            }
+            
+            // Update review counts
+            updateReviewCounts(reviewId, currentVote, finalVoteType)
             
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+    
+    private suspend fun updateReviewCounts(
+        reviewId: String, 
+        oldVote: com.example.moviemobileproject.data.model.VoteType, 
+        newVote: com.example.moviemobileproject.data.model.VoteType
+    ) {
+        try {
+            val reviewRef = firestore.collection("movie_reviews").document(reviewId)
+            
+            // Calculate the changes needed
+            var likesChange = 0
+            var dislikesChange = 0
+            
+            // Remove old vote counts
+            when (oldVote) {
+                com.example.moviemobileproject.data.model.VoteType.LIKE -> likesChange -= 1
+                com.example.moviemobileproject.data.model.VoteType.DISLIKE -> dislikesChange -= 1
+                com.example.moviemobileproject.data.model.VoteType.NONE -> { /* no change */ }
+            }
+            
+            // Add new vote counts
+            when (newVote) {
+                com.example.moviemobileproject.data.model.VoteType.LIKE -> likesChange += 1
+                com.example.moviemobileproject.data.model.VoteType.DISLIKE -> dislikesChange += 1
+                com.example.moviemobileproject.data.model.VoteType.NONE -> { /* no change */ }
+            }
+            
+            // Apply changes
+            val updates = mutableMapOf<String, Any>()
+            if (likesChange != 0) {
+                updates["likes"] = FieldValue.increment(likesChange.toLong())
+            }
+            if (dislikesChange != 0) {
+                updates["dislikes"] = FieldValue.increment(dislikesChange.toLong())
+            }
+            
+            if (updates.isNotEmpty()) {
+                reviewRef.update(updates).await()
+            }
+        } catch (e: Exception) {
+            println("DEBUG: Error updating review counts: ${e.message}")
+        }
+    }
+    
+    // Get all user votes for a list of reviews
+    suspend fun getUserVotesForReviews(reviewIds: List<String>): Result<Map<String, com.example.moviemobileproject.data.model.VoteType>> {
+        return try {
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                return Result.success(emptyMap())
+            }
+            
+            if (reviewIds.isEmpty()) {
+                return Result.success(emptyMap())
+            }
+            
+            val votesSnapshot = firestore.collection("review_votes")
+                .whereIn("reviewId", reviewIds)
+                .whereEqualTo("userId", currentUser.uid)
+                .get()
+                .await()
+            
+            val votesMap = mutableMapOf<String, com.example.moviemobileproject.data.model.VoteType>()
+            
+            votesSnapshot.documents.forEach { doc ->
+                val reviewId = doc.getString("reviewId") ?: ""
+                val voteTypeString = doc.getString("voteType") ?: "NONE"
+                val voteType = com.example.moviemobileproject.data.model.VoteType.valueOf(voteTypeString)
+                votesMap[reviewId] = voteType
+            }
+            
+            // Fill in NONE for reviews without votes
+            reviewIds.forEach { reviewId ->
+                if (!votesMap.containsKey(reviewId)) {
+                    votesMap[reviewId] = com.example.moviemobileproject.data.model.VoteType.NONE
+                }
+            }
+            
+            Result.success(votesMap)
+        } catch (e: Exception) {
+            Result.success(emptyMap())
         }
     }
 }

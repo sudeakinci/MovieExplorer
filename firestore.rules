@@ -19,12 +19,22 @@ service cloud.firestore {
       allow update: if request.auth != null 
         && request.auth.uid == resource.data.userId;
       
-      // Anyone authenticated can like reviews (increment likes/dislikes)
+      // Anyone authenticated can update likes/dislikes counts
       allow update: if request.auth != null 
         && request.writeFields.hasOnly(['likes', 'dislikes']);
       
       // Users can delete their own reviews
       allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Review votes collection - for tracking user votes
+    match /review_votes/{voteId} {
+      // Anyone authenticated can read votes
+      allow read: if request.auth != null;
+      
+      // Users can only create/update/delete their own votes
+      allow create, update, delete: if request.auth != null 
         && request.auth.uid == resource.data.userId;
     }
     
