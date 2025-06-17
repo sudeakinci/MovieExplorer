@@ -1,5 +1,6 @@
 package com.example.moviemobileproject.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -143,24 +147,59 @@ fun SearchScreen(
                         )
                     }
                 },                actions = {
-                    IconButton(
-                        onClick = { 
-                            showFilters = !showFilters
-                            if (showFilters) {
-                                // Initialize temp states with current values when opening filters
-                                tempSelectedCategories = selectedCategories
-                                tempSelectedYear = selectedYear
-                                tempSelectedRating = selectedRating
+                    Box {
+                        IconButton(
+                            onClick = { 
+                                showFilters = !showFilters
+                                if (showFilters) {
+                                    // Initialize temp states with current values when opening filters
+                                    tempSelectedCategories = selectedCategories
+                                    tempSelectedYear = selectedYear
+                                    tempSelectedRating = selectedRating
+                                }
                             }
+                        ) {
+                            Icon(
+                                Icons.Default.FilterList,
+                                contentDescription = "Filters",
+                                tint = Color.White
+                            )
                         }
-                    ) {
-                        Icon(
-                            Icons.Default.FilterList,
-                            contentDescription = "Filters",
-                            tint = Color.White
-                        )
+                        
+                        // Filter Dropdown Menu
+                        DropdownMenu(
+                            expanded = showFilters,
+                            onDismissRequest = { showFilters = false },
+                            modifier = Modifier
+                                .width(320.dp)
+                                .background(Color(0xFF1A1A2E))
+                        ) {
+                            FilterDropdownContent(
+                                selectedCategories = tempSelectedCategories,
+                                selectedYear = tempSelectedYear,
+                                selectedRating = tempSelectedRating,
+                                onCategoriesChange = { tempSelectedCategories = it },
+                                onYearChange = { tempSelectedYear = it },
+                                onRatingChange = { tempSelectedRating = it },
+                                onApplyFilters = {
+                                    selectedCategories = tempSelectedCategories
+                                    selectedYear = tempSelectedYear
+                                    selectedRating = tempSelectedRating
+                                    showFilters = false
+                                },
+                                onClearFilters = {
+                                    tempSelectedCategories = setOf()
+                                    tempSelectedYear = "All"
+                                    tempSelectedRating = "All"
+                                    selectedCategories = setOf()
+                                    selectedYear = "All"
+                                    selectedRating = "All"
+                                },
+                                categories = movieViewModel.getMovieCategories()
+                            )
+                        }
                     }
-                },                colors = TopAppBarDefaults.topAppBarColors(
+                },colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF1A1A2E)
                 )
             )
@@ -190,33 +229,8 @@ fun SearchScreen(
                 ) {
                     CircularProgressIndicator(color = Color.White)
                 }            } else {
-                Column {                    // Filter Section
-                    if (showFilters) {
-                        FilterSection(
-                            selectedCategories = tempSelectedCategories,
-                            selectedYear = tempSelectedYear,
-                            selectedRating = tempSelectedRating,
-                            onCategoriesChange = { tempSelectedCategories = it },
-                            onYearChange = { tempSelectedYear = it },
-                            onRatingChange = { tempSelectedRating = it },
-                            onApplyFilters = {
-                                selectedCategories = tempSelectedCategories
-                                selectedYear = tempSelectedYear
-                                selectedRating = tempSelectedRating
-                                showFilters = false
-                            },
-                            onClearFilters = {
-                                tempSelectedCategories = setOf()
-                                tempSelectedYear = "All"
-                                tempSelectedRating = "All"
-                                selectedCategories = setOf()
-                                selectedYear = "All"
-                                selectedRating = "All"
-                            },
-                            categories = movieViewModel.getMovieCategories()
-                        )
-                    }
-                      // Content Section
+                Column {
+                    // Content Section
                     if (searchQuery.isEmpty() && !hasActiveFilters) {
                         // Search prompt (no search and no filters)
                         Column(
@@ -322,7 +336,7 @@ fun SearchScreen(
 }
 
 @Composable
-fun FilterSection(
+fun FilterDropdownContent(
     selectedCategories: Set<String>,
     selectedYear: String,
     selectedRating: String,
@@ -333,172 +347,287 @@ fun FilterSection(
     onClearFilters: () -> Unit,
     categories: List<String>
 ) {
-    Card(
+    var categoryDropdownExpanded by remember { mutableStateOf(false) }
+    var yearDropdownExpanded by remember { mutableStateOf(false) }
+    var ratingDropdownExpanded by remember { mutableStateOf(false) }
+    
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.1f)
-        ),
-        shape = RoundedCornerShape(12.dp)
+            .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "🔧 Filters",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                
-                // Clear filters button
-                if (selectedCategories.isNotEmpty() || selectedYear != "All" || selectedRating != "All") {
-                    TextButton(
-                        onClick = onClearFilters,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = Color.White.copy(alpha = 0.8f)
-                        )
+            Text(
+                text = "🔧 Filters",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            
+            // Clear filters button
+            if (selectedCategories.isNotEmpty() || selectedYear != "All" || selectedRating != "All") {
+                TextButton(
+                    onClick = onClearFilters,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.White.copy(alpha = 0.8f)
+                    )
+                ) {
+                    Text(
+                        text = "Clear All",
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }        
+        // Category Dropdown Filter
+        Column(modifier = Modifier.padding(bottom = 6.dp)) {
+            Text(
+                text = "Categories",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 3.dp)
+            )
+            
+            Box {
+                OutlinedButton(
+                    onClick = { categoryDropdownExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    ),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Clear All",
+                            text = if (selectedCategories.isEmpty()) "Select Categories" 
+                                   else "${selectedCategories.size} selected",
                             fontSize = 12.sp
+                        )
+                        Icon(
+                            imageVector = if (categoryDropdownExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
+                DropdownMenu(
+                    expanded = categoryDropdownExpanded,
+                    onDismissRequest = { categoryDropdownExpanded = false },
+                    modifier = Modifier
+                        .width(280.dp)
+                        .background(Color(0xFF2A2A3E))
+                ) {
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = selectedCategories.contains(category),
+                                        onCheckedChange = {
+                                            val newCategories = if (selectedCategories.contains(category)) {
+                                                selectedCategories - category
+                                            } else {
+                                                selectedCategories + category
+                                            }
+                                            onCategoriesChange(newCategories)
+                                        },
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = Color(0xFF4CAF50),
+                                            uncheckedColor = Color.White
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = category,
+                                        color = Color.White,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            },
+                            onClick = {
+                                val newCategories = if (selectedCategories.contains(category)) {
+                                    selectedCategories - category
+                                } else {
+                                    selectedCategories + category
+                                }
+                                onCategoriesChange(newCategories)
+                            }
                         )
                     }
                 }
             }
-            
-            // Category Filter
-            Text(
-                text = "Categories (Multiple Selection)",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                items(categories) { category ->
-                    FilterChip(
-                        label = category,
-                        isSelected = selectedCategories.contains(category),
-                        onClick = { 
-                            val newCategories = if (selectedCategories.contains(category)) {
-                                selectedCategories - category
-                            } else {
-                                selectedCategories + category
-                            }
-                            onCategoriesChange(newCategories)
-                        }
-                    )
-                }
-            }
-            
-            // Year Filter
+        }        
+        // Year Dropdown Filter
+        Column(modifier = Modifier.padding(bottom = 6.dp)) {
             Text(
                 text = "Year",
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 3.dp)
             )
             
             val years = listOf("All", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015")
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                items(years) { year ->
-                    FilterChip(
-                        label = year,
-                        isSelected = selectedYear == year,
-                        onClick = { onYearChange(year) }
-                    )
-                }
-            }
             
-            // Rating Filter
-            Text(
-                text = "Minimum Rating",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            val ratings = listOf("All", "9+", "8+", "7+", "6+")
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                items(ratings) { rating ->
-                    FilterChip(
-                        label = rating,
-                        isSelected = selectedRating == rating,
-                        onClick = { onRatingChange(rating) }
-                    )
-                }
-            }
-            
-            // Apply Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {                OutlinedButton(
-                    onClick = onClearFilters,
+            Box {
+                OutlinedButton(
+                    onClick = { yearDropdownExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = Color.White
                     ),
-                    modifier = Modifier.weight(1f)
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text("Clear")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedYear,
+                            fontSize = 12.sp
+                        )
+                        Icon(
+                            imageVector = if (yearDropdownExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
                 }
-                
-                Button(
-                    onClick = onApplyFilters,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
+                DropdownMenu(
+                    expanded = yearDropdownExpanded,
+                    onDismissRequest = { yearDropdownExpanded = false },
+                    modifier = Modifier
+                        .width(280.dp)
+                        .background(Color(0xFF2A2A3E))
+                ) {
+                    years.forEach { year ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = year,
+                                    color = if (selectedYear == year) Color(0xFF4CAF50) else Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selectedYear == year) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            onClick = {
+                                onYearChange(year)
+                                yearDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }        
+        // Rating Dropdown Filter
+        Column(modifier = Modifier.padding(bottom = 10.dp)) {
+            Text(
+                text = "Minimum Rating",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 3.dp)
+            )
+            
+            val ratings = listOf("All", "9+", "8+", "7+", "6+")
+            
+            Box {
+                OutlinedButton(
+                    onClick = { ratingDropdownExpanded = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
                     ),
-                    modifier = Modifier.weight(1f)
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text("Apply Filters")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedRating,
+                            fontSize = 12.sp
+                        )
+                        Icon(
+                            imageVector = if (ratingDropdownExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
                 }
+                DropdownMenu(
+                    expanded = ratingDropdownExpanded,
+                    onDismissRequest = { ratingDropdownExpanded = false },
+                    modifier = Modifier
+                        .width(280.dp)
+                        .background(Color(0xFF2A2A3E))
+                ) {
+                    ratings.forEach { rating ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = rating,
+                                    color = if (selectedRating == rating) Color(0xFF4CAF50) else Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selectedRating == rating) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            onClick = {
+                                onRatingChange(rating)
+                                ratingDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Apply Button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = onClearFilters,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.White
+                ),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                Text("Clear", fontSize = 12.sp)
+            }
+            
+            Button(
+                onClick = onApplyFilters,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4CAF50)
+                ),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                Text("Apply", fontSize = 12.sp)
             }
         }
     }
 }
 
-@Composable
-fun FilterChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    androidx.compose.material3.FilterChip(
-        onClick = onClick,
-        label = {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = if (isSelected) Color.Black else Color.White
-            )
-        },
-        selected = isSelected,
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = Color.White,
-            selectedLabelColor = Color.Black,
-            containerColor = Color.Transparent,
-            labelColor = Color.White
-        )
-    )
-}
+
