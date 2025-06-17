@@ -100,27 +100,8 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                    horizontalAlignment = Alignment.CenterHorizontally                ) {
                     Spacer(modifier = Modifier.height(32.dp))
-                    
-                    // Profile Picture
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier.size(60.dp),
-                            tint = Color.White.copy(alpha = 0.8f)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
                     
                     // User Info Card
                     Card(
