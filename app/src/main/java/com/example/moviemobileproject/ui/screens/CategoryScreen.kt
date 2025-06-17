@@ -41,7 +41,7 @@ fun CategoryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = getCategoryIcon(categoryName) + " " + categoryName,
+                        text = categoryName,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -94,14 +94,9 @@ fun CategoryScreen(
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
-                    ) {
-                        Column(
+                    ) {                        Column(
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {                            Text(
-                                text = "",
-                                fontSize = 48.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
+                        ) {
                             Text(
                                 text = "No movies found",
                                 fontSize = 18.sp,

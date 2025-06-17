@@ -3,12 +3,9 @@ package com.example.moviemobileproject.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -24,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,13 +38,13 @@ fun SearchScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showFilters by remember { mutableStateOf(false) }
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
-    var selectedYear by remember { mutableStateOf("All") }
-    var selectedRating by remember { mutableStateOf("All") }
+    var selectedYear by remember { mutableStateOf("Newest First") }
+    var selectedRating by remember { mutableStateOf("High to Low") }
     
     // Temporary filter states (before applying)
     var tempSelectedCategories by remember { mutableStateOf(setOf<String>()) }
-    var tempSelectedYear by remember { mutableStateOf("All") }
-    var tempSelectedRating by remember { mutableStateOf("All") }
+    var tempSelectedYear by remember { mutableStateOf("Newest First") }
+    var tempSelectedRating by remember { mutableStateOf("High to Low") }
     
     val searchResults by movieViewModel.searchResults.collectAsState()
     val allMovies by movieViewModel.allMovies.collectAsState()
@@ -61,27 +57,28 @@ fun SearchScreen(
     }
     
     // Determine which movies to filter based on search state
-    val moviesToFilter = if (searchQuery.isEmpty()) allMovies else searchResults
-    
-    // Filter the movies based on selected filters
+    val moviesToFilter = if (searchQuery.isEmpty()) allMovies else searchResults      // Filter the movies based on selected filters
     val filteredResults = remember(moviesToFilter, selectedCategories, selectedYear, selectedRating) {
-        moviesToFilter.filter { movie ->
+        val filtered = moviesToFilter.filter { movie ->
             val categoryMatch = selectedCategories.isEmpty() || selectedCategories.contains(movie.category)
-            val yearMatch = selectedYear == "All" || movie.releaseYear.toString() == selectedYear
-            val ratingMatch = when (selectedRating) {
-                "All" -> true
-                "9+" -> movie.rating >= 9.0
-                "8+" -> movie.rating >= 8.0
-                "7+" -> movie.rating >= 7.0
-                "6+" -> movie.rating >= 6.0
-                else -> true
-            }
-            categoryMatch && yearMatch && ratingMatch
+            categoryMatch
         }
-    }
-    
-    // Check if any filters are applied
-    val hasActiveFilters = selectedCategories.isNotEmpty() || selectedYear != "All" || selectedRating != "All"
+        
+        // Apply sorting based on year selection
+        val yearSorted = when (selectedYear) {
+            "Newest First" -> filtered.sortedByDescending { it.releaseYear }
+            "Oldest First" -> filtered.sortedBy { it.releaseYear }
+            else -> filtered
+        }
+        
+        // Apply sorting based on rating selection
+        when (selectedRating) {
+            "High to Low" -> yearSorted.sortedByDescending { it.rating }
+            "Low to High" -> yearSorted.sortedBy { it.rating }
+            else -> yearSorted
+        }
+    }      // Check if any filters are applied
+    val hasActiveFilters = selectedCategories.isNotEmpty()
     
     Scaffold(
         topBar = {
@@ -186,14 +183,13 @@ fun SearchScreen(
                                     selectedYear = tempSelectedYear
                                     selectedRating = tempSelectedRating
                                     showFilters = false
-                                },
-                                onClearFilters = {
+                                },                                onClearFilters = {
                                     tempSelectedCategories = setOf()
-                                    tempSelectedYear = "All"
-                                    tempSelectedRating = "All"
+                                    tempSelectedYear = "Newest First"
+                                    tempSelectedRating = "High to Low"
                                     selectedCategories = setOf()
-                                    selectedYear = "All"
-                                    selectedRating = "All"
+                                    selectedYear = "Newest First"
+                                    selectedRating = "High to Low"
                                 },
                                 categories = movieViewModel.getMovieCategories()
                             )
@@ -231,16 +227,12 @@ fun SearchScreen(
                 }            } else {
                 Column {
                     // Content Section
-                    if (searchQuery.isEmpty() && !hasActiveFilters) {
-                        // Search prompt (no search and no filters)
+                    if (searchQuery.isEmpty() && !hasActiveFilters) {                        // Search prompt (no search and no filters)
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {                            Text(
-                                text = "",
-                                fontSize = 48.sp
-                            )
+                        ) {
                             Text(
                                 text = "Search for movies",
                                 fontSize = 18.sp,
@@ -253,16 +245,12 @@ fun SearchScreen(
                                 color = Color.White.copy(alpha = 0.7f)
                             )
                         }
-                    } else if (filteredResults.isEmpty()) {
-                        // No results
+                    } else if (filteredResults.isEmpty()) {                        // No results
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {                            Text(
-                                text = "",
-                                fontSize = 48.sp
-                            )
+                        ) {
                             Text(
                                 text = if (searchQuery.isEmpty()) "No movies match filters" else if (searchResults.isEmpty()) "No movies found" else "No movies match filters",
                                 fontSize = 18.sp,
@@ -279,19 +267,14 @@ fun SearchScreen(
                             // Results counter and active filters
                             Column(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {                                
-                                // Show active filters
+                            ) {                                  // Show active filters
                                 if (hasActiveFilters) {
                                     val activeFilters = mutableListOf<String>()
                                     if (selectedCategories.isNotEmpty()) {
                                         activeFilters.add("Categories: ${selectedCategories.joinToString(", ")}")
                                     }
-                                    if (selectedYear != "All") {
-                                        activeFilters.add("Year: $selectedYear")
-                                    }
-                                    if (selectedRating != "All") {
-                                        activeFilters.add("Rating: $selectedRating")
-                                    }
+                                    activeFilters.add("Year: $selectedYear")
+                                    activeFilters.add("Rating: $selectedRating")
                                     
                                     if (activeFilters.isNotEmpty()) {
                                         Text(
@@ -366,10 +349,8 @@ fun FilterDropdownContent(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
-            )
-            
-            // Clear filters button
-            if (selectedCategories.isNotEmpty() || selectedYear != "All" || selectedRating != "All") {
+            )              // Clear filters button
+            if (selectedCategories.isNotEmpty()) {
                 TextButton(
                     onClick = onClearFilters,
                     colors = ButtonDefaults.textButtonColors(
@@ -409,7 +390,7 @@ fun FilterDropdownContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (selectedCategories.isEmpty()) "Select Categories" 
+                            text = if (selectedCategories.isEmpty()) "Categories" 
                                    else "${selectedCategories.size} selected",
                             fontSize = 12.sp
                         )
@@ -468,8 +449,7 @@ fun FilterDropdownContent(
                     }
                 }
             }
-        }        
-        // Year Dropdown Filter
+        }          // Year Dropdown Filter
         Column(modifier = Modifier.padding(bottom = 6.dp)) {
             Text(
                 text = "Year",
@@ -479,7 +459,7 @@ fun FilterDropdownContent(
                 modifier = Modifier.padding(bottom = 3.dp)
             )
             
-            val years = listOf("All", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015")
+            val years = listOf("Newest First", "Oldest First")
             
             Box {
                 OutlinedButton(
@@ -532,18 +512,18 @@ fun FilterDropdownContent(
                     }
                 }
             }
-        }        
+        }
         // Rating Dropdown Filter
         Column(modifier = Modifier.padding(bottom = 10.dp)) {
             Text(
-                text = "Minimum Rating",
+                text = "Rating",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White,
                 modifier = Modifier.padding(bottom = 3.dp)
             )
             
-            val ratings = listOf("All", "9+", "8+", "7+", "6+")
+            val ratings = listOf("High to Low", "Low to High")
             
             Box {
                 OutlinedButton(
@@ -597,29 +577,17 @@ fun FilterDropdownContent(
                 }
             }
         }
-        
-        // Apply Button
+          // Apply Button
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.End
         ) {
-            OutlinedButton(
-                onClick = onClearFilters,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
-                ),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                Text("Clear", fontSize = 12.sp)
-            }
-            
             Button(
                 onClick = onApplyFilters,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF4CAF50)
                 ),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(0.5f),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
                 Text("Apply", fontSize = 12.sp)

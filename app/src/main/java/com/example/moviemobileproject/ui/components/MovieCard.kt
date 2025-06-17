@@ -101,12 +101,10 @@ fun MovieCard(
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 12.sp,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                if (movie.rating > 0) {
+                    overflow = TextOverflow.Ellipsis                )
+                  if (movie.rating > 0) {
                     Text(
-                        text = "⭐ ${movie.rating}",
+                        text = String.format("%.1f", movie.rating),
                         color = Color.Yellow,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium

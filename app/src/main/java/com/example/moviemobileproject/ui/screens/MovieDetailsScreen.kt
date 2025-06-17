@@ -142,14 +142,9 @@ fun MovieDetailsScreen(
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
-                    ) {
-                        Column(
+                    ) {                        Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "❌",
-                                fontSize = 48.sp
-                            )
                             Text(
                                 text = "Error loading movie details",
                                 fontSize = 18.sp,
