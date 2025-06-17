@@ -45,9 +45,8 @@ fun ProfileScreen(
     
     Scaffold(        topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "👤 Profile",
+                title = {                    Text(
+                        text = "Profile",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

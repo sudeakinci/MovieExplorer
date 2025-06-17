@@ -69,7 +69,7 @@ fun LoginScreen(
         ) {
             // App Title
             Text(
-                text = "🎬 MovieApp",
+                text = "MovieApp",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

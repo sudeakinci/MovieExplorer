@@ -23,5 +23,4 @@ data class Movie(
 data class MovieCategory(
     val id: String = "",
     val name: String = "",
-    val iconEmoji: String = "🎬"
 )

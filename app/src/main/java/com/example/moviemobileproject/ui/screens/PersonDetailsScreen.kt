@@ -126,9 +126,8 @@ fun PersonDetailsScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "❌",
+                        ) {                            Text(
+                                text = "",
                                 fontSize = 48.sp
                             )
                             Text(

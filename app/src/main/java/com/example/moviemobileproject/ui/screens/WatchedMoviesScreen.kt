@@ -37,7 +37,7 @@ fun WatchedMoviesScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "👁️ Watched Movies",
+                        text = "Watched Movies",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -93,7 +93,7 @@ fun WatchedMoviesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "👁️",
+                            text = "",
                             fontSize = 48.sp
                         )
                         Text(

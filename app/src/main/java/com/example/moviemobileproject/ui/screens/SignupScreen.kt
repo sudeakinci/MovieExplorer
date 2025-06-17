@@ -63,7 +63,7 @@ fun SignupScreen(
         ) {
             // Title
             Text(
-                text = "🎬 Create Account",
+                text = "Create Account",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

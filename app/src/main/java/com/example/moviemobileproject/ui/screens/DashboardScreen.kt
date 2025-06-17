@@ -78,10 +78,9 @@ fun DashboardScreen(
                                     .background(Color(0xFF1A1A2E))
                                     .width(180.dp)
                             ) {
-                                DropdownMenuItem(
-                                    text = {
+                                DropdownMenuItem(                                    text = {
                                         Text(
-                                            "🎬 All Categories",
+                                            "All Categories",
                                             color = Color.White,
                                             fontSize = 14.sp
                                         )
@@ -113,9 +112,8 @@ fun DashboardScreen(
                         }
                         
                         Spacer(modifier = Modifier.width(8.dp))
-                        
-                        Text(
-                            "🎬 MovieApp",
+                          Text(
+                            "MovieApp",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -177,7 +175,7 @@ fun DashboardScreen(
                     item(span = { GridItemSpan(2) }) {
                         // Movies Section Header
                         Text(
-                            text = if (selectedCategory == "All Categories") "🔥 Popular Movies" else "${getCategoryIcon(selectedCategory)} $selectedCategory Movies",
+                            text = if (selectedCategory == "All Categories") "Popular Movies" else "${getCategoryIcon(selectedCategory)} $selectedCategory Movies",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -198,7 +196,7 @@ fun DashboardScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
-                                        text = "📽️",
+                                        text = "",
                                         fontSize = 48.sp
                                     )
                                     Text(

@@ -37,9 +37,8 @@ fun SavedMoviesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "💖 Saved Movies",
+                title = {                    Text(
+                        text = "Saved Movies",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -82,9 +81,8 @@ fun SavedMoviesScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "💔",
+                    ) {                        Text(
+                            text = "",
                             fontSize = 48.sp
                         )
                         Text(

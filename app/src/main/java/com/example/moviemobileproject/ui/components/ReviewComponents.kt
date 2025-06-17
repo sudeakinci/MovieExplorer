@@ -86,9 +86,8 @@ fun ReviewSection(
                         .fillMaxWidth()
                         .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "💬",
+                ) {                    Text(
+                        text = "",
                         fontSize = 48.sp
                     )
                     Text(

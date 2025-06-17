@@ -97,9 +97,8 @@ fun CategoryScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "📽️",
+                        ) {                            Text(
+                                text = "",
                                 fontSize = 48.sp
                             )
                             Spacer(modifier = Modifier.height(16.dp))
@@ -172,14 +171,14 @@ fun CategoryScreen(
 
 fun getCategoryIcon(category: String): String {
     return when (category) {
-        "Action" -> "⚡"
-        "Drama" -> "🎭"
-        "Sci-Fi" -> "🚀"
-        "Crime" -> "🔫"
-        "Romance" -> "💕"
-        "Comedy" -> "😂"
-        "Horror" -> "👻"
-        "Thriller" -> "😱"
-        else -> "🎬"
+        "Action" -> ""
+        "Drama" -> ""
+        "Sci-Fi" -> ""
+        "Crime" -> ""
+        "Romance" -> ""
+        "Comedy" -> ""
+        "Horror" -> ""
+        "Thriller" -> ""
+        else -> ""
     }
 }

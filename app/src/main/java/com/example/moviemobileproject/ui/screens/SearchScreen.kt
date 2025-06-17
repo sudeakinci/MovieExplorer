@@ -237,9 +237,8 @@ fun SearchScreen(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "🔍",
+                        ) {                            Text(
+                                text = "",
                                 fontSize = 48.sp
                             )
                             Text(
@@ -260,9 +259,8 @@ fun SearchScreen(
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "😔",
+                        ) {                            Text(
+                                text = "",
                                 fontSize = 48.sp
                             )
                             Text(
@@ -364,7 +362,7 @@ fun FilterDropdownContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "🔧 Filters",
+                text = "Filters",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
