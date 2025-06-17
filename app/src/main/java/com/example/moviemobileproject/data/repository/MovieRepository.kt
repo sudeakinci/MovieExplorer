@@ -646,4 +646,41 @@ class MovieRepository {
             Result.success(emptyMap())
         }
     }
+    
+    suspend fun deleteMovieReview(reviewId: String): Result<Unit> {
+        val userId = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
+        
+        return try {
+            // First check if the review belongs to the current user
+            val reviewDoc = firestore.collection("movie_reviews").document(reviewId).get().await()
+            
+            if (!reviewDoc.exists()) {
+                return Result.failure(Exception("Review not found"))
+            }
+            
+            val reviewUserId = reviewDoc.getString("userId")
+            if (reviewUserId != userId) {
+                return Result.failure(Exception("You can only delete your own reviews"))
+            }
+            
+            // Delete the review
+            firestore.collection("movie_reviews").document(reviewId).delete().await()
+            
+            // Also delete any votes for this review
+            val votesSnapshot = firestore.collection("review_votes")
+                .whereEqualTo("reviewId", reviewId)
+                .get()
+                .await()
+            
+            val batch = firestore.batch()
+            votesSnapshot.documents.forEach { doc ->
+                batch.delete(doc.reference)
+            }
+            batch.commit().await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

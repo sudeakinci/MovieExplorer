@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import dagger.hilt.android.lifecycle.HiltViewModel
 import com.example.moviemobileproject.ui.components.BottomNavigationBar
 import com.example.moviemobileproject.ui.components.ReviewSection
 import com.example.moviemobileproject.ui.components.AddReviewDialog
@@ -40,6 +41,8 @@ import com.example.moviemobileproject.data.model.CastMember
 import com.example.moviemobileproject.data.model.MovieDetails
 import com.example.moviemobileproject.data.model.VoteType
 import com.example.moviemobileproject.ui.viewmodel.MovieViewModel
+import com.example.moviemobileproject.ui.viewmodel.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,12 +170,12 @@ fun MovieDetailsScreen(
                                         movieDetails!!.releaseDate.substring(0, 4).toInt()
                                     } catch (e: Exception) { 0 }
                                 } else { 0 }
-                                
-                                val movie = com.example.moviemobileproject.data.model.Movie(
+                                  val movie = com.example.moviemobileproject.data.model.Movie(
                                     id = movieId,
                                     title = movieDetails!!.title,
                                     imageUrl = movieDetails!!.posterUrl,
                                     category = movieDetails!!.genres.firstOrNull() ?: "Unknown",
+                                    isPopular = false,
                                     description = movieDetails!!.overview,
                                     rating = movieDetails!!.rating,
                                     releaseYear = releaseYear,
@@ -193,10 +196,12 @@ fun MovieDetailsScreen(
                             }
                         },
                         onAddReview = { rating, comment ->
-                            movieViewModel.addReview(movieId, rating, comment)
-                        },
+                            movieViewModel.addReview(movieId, rating, comment)                        },
                         onVoteReview = { reviewId, voteType ->
                             movieViewModel.voteReview(reviewId, voteType)
+                        },
+                        onDeleteReview = { reviewId, movieId ->
+                            movieViewModel.deleteReview(reviewId, movieId)
                         },
                         navController = navController
                     )
@@ -216,6 +221,7 @@ fun MovieDetailsContent(
     onTrailerClick: (String) -> Unit,
     onAddReview: (Float, String) -> Unit,
     onVoteReview: (String, com.example.moviemobileproject.data.model.VoteType) -> Unit,
+    onDeleteReview: (String, String) -> Unit,
     navController: NavController
 ) {
     LazyColumn(
@@ -462,15 +468,24 @@ fun MovieDetailsContent(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
-        
-        // Reviews Section
+          // Reviews Section
         item {
             var showAddReviewDialog by remember { mutableStateOf(false) }
-              ReviewSection(
+            
+            // Get current user ID for delete functionality
+            val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+              
+            ReviewSection(
                 reviews = reviews,
                 userVotes = userVotes,
                 onAddReviewClick = { showAddReviewDialog = true },
                 onVoteReview = onVoteReview,
+                onDeleteReview = { reviewId ->
+                    // Create delete callback that passes both reviewId and movieId
+                    val movieId = movieDetails.id
+                    onDeleteReview(reviewId, movieId)
+                },
+                currentUserId = currentUserId,
                 modifier = Modifier.padding(16.dp)
             )
             

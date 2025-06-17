@@ -1,6 +1,7 @@
 package com.example.moviemobileproject.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material3.*
@@ -34,6 +36,8 @@ fun ReviewSection(
     userVotes: Map<String, VoteType>,
     onAddReviewClick: () -> Unit,
     onVoteReview: (String, VoteType) -> Unit,
+    onDeleteReview: (String) -> Unit,
+    currentUserId: String?,
     modifier: Modifier = Modifier
 ) {
     // Debug log
@@ -110,7 +114,9 @@ fun ReviewSection(
                     ReviewCard(
                         review = review,
                         userVote = userVotes[review.id] ?: VoteType.NONE,
-                        onVote = { voteType -> onVoteReview(review.id, voteType) }
+                        onVote = { voteType -> onVoteReview(review.id, voteType) },
+                        onDelete = { onDeleteReview(review.id) },
+                        isOwnReview = currentUserId == review.userId
                     )
                 }
             }
@@ -122,8 +128,12 @@ fun ReviewSection(
 fun ReviewCard(
     review: Review,
     userVote: VoteType,
-    onVote: (VoteType) -> Unit
+    onVote: (VoteType) -> Unit,
+    onDelete: () -> Unit,
+    isOwnReview: Boolean
 ) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -133,8 +143,7 @@ fun ReviewCard(
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
-        ) {
-            // User info and rating
+        ) {            // User info and rating
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -155,22 +164,42 @@ fun ReviewCard(
                     )
                 }
                 
-                // Rating stars
-                Row {
-                    repeat(5) { index ->
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = null,
-                            tint = if (index < review.rating.toInt()) Color.Yellow else Color.Gray,
-                            modifier = Modifier.size(16.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Rating stars
+                    Row {
+                        repeat(5) { index ->
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = if (index < review.rating.toInt()) Color.Yellow else Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Text(
+                            text = " ${review.rating}/5",
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(start = 4.dp)
                         )
                     }
-                    Text(
-                        text = " ${review.rating}/5",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+                    
+                    // Delete button - only show for user's own reviews
+                    if (isOwnReview) {
+                        IconButton(
+                            onClick = { showDeleteConfirmation = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete Review",
+                                tint = Color.Red.copy(alpha = 0.7f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
             
@@ -235,6 +264,53 @@ fun ReviewCard(
                 }
             }
         }
+    }
+    
+    // Delete Confirmation Dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = {
+                Text(
+                    text = "Delete Comment",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete your comment?",
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete()
+                        showDeleteConfirmation = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red
+                    )
+                ) {
+                    Text("Yes", color = Color.White)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showDeleteConfirmation = false },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    ),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+                ) {
+                    Text("No")
+                }
+            },
+            containerColor = Color(0xFF1A1A2E),
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
     }
 }
 

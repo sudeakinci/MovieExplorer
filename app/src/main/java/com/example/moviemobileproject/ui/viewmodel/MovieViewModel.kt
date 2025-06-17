@@ -286,12 +286,17 @@ class MovieViewModel : ViewModel() {
                 }
         }
     }
-      // Keep for backward compatibility
-    fun likeReview(reviewId: String) {
-        voteReview(reviewId, VoteType.LIKE)
-    }
     
-    fun dislikeReview(reviewId: String) {
-        voteReview(reviewId, VoteType.DISLIKE)
+    fun deleteReview(reviewId: String, movieId: String) {
+        viewModelScope.launch {
+            movieRepository.deleteMovieReview(reviewId)
+                .onSuccess {
+                    loadMovieReviews(movieId) // Refresh reviews after deletion
+                    _errorMessage.value = null
+                }
+                .onFailure { exception ->
+                    _errorMessage.value = exception.message
+                }
+        }
     }
 }
