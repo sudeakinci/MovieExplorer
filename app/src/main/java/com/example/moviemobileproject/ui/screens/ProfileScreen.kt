@@ -36,14 +36,14 @@ fun ProfileScreen(
 ) {
     val userData by authViewModel.userData.collectAsState()
     var isLoading by remember { mutableStateOf(true) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         authViewModel.getUserData()
         isLoading = false
     }
     
-    Scaffold(
-        topBar = {
+    Scaffold(        topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -52,6 +52,18 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showLogoutDialog = true }
+                    ) {
+                        Icon(
+                            Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF1A1A2E)
@@ -224,50 +236,58 @@ fun ProfileScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                    }
+                    }                    
+                    Spacer(modifier = Modifier.weight(1f))
                     
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    // Logout Button
-                    Button(
+                }            }
+        }
+        
+        // Logout Confirmation Dialog
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = {
+                    Text(
+                        text = "Logout",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to log out?",
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                confirmButton = {
+                    TextButton(
                         onClick = {
+                            showLogoutDialog = false
                             authViewModel.signOut()
                             navController.navigate(Screen.Login.route) {
                                 popUpTo(0) { inclusive = true }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Red.copy(alpha = 0.8f)
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color.Red
+                        )
                     ) {
-                        Icon(
-                            Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Logout",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("Logout")
                     }
-                    
-                    Spacer(modifier = Modifier.weight(1f))
-                    
-                    // App Info
-                    Text(
-                        text = "🎬 MovieApp v1.0",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showLogoutDialog = false },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = Color.White.copy(alpha = 0.8f)
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = Color(0xFF16213E),
+                shape = RoundedCornerShape(16.dp)
+            )
         }
     }
 }
