@@ -38,13 +38,13 @@ fun SearchScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showFilters by remember { mutableStateOf(false) }
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
-    var selectedYear by remember { mutableStateOf("Newest First") }
-    var selectedRating by remember { mutableStateOf("High to Low") }
+    var selectedYear by remember { mutableStateOf("All") }
+    var selectedRating by remember { mutableStateOf("All") }
     
     // Temporary filter states (before applying)
     var tempSelectedCategories by remember { mutableStateOf(setOf<String>()) }
-    var tempSelectedYear by remember { mutableStateOf("Newest First") }
-    var tempSelectedRating by remember { mutableStateOf("High to Low") }
+    var tempSelectedYear by remember { mutableStateOf("All") }
+    var tempSelectedRating by remember { mutableStateOf("All") }
     
     val searchResults by movieViewModel.searchResults.collectAsState()
     val allMovies by movieViewModel.allMovies.collectAsState()
@@ -63,9 +63,9 @@ fun SearchScreen(
             val categoryMatch = selectedCategories.isEmpty() || selectedCategories.contains(movie.category)
             categoryMatch
         }
-        
-        // Apply sorting based on year selection
+          // Apply sorting based on year selection
         val yearSorted = when (selectedYear) {
+            "All" -> filtered
             "Newest First" -> filtered.sortedByDescending { it.releaseYear }
             "Oldest First" -> filtered.sortedBy { it.releaseYear }
             else -> filtered
@@ -73,6 +73,7 @@ fun SearchScreen(
         
         // Apply sorting based on rating selection
         when (selectedRating) {
+            "All" -> yearSorted
             "High to Low" -> yearSorted.sortedByDescending { it.rating }
             "Low to High" -> yearSorted.sortedBy { it.rating }
             else -> yearSorted
@@ -459,7 +460,7 @@ fun FilterDropdownContent(
                 modifier = Modifier.padding(bottom = 3.dp)
             )
             
-            val years = listOf("Newest First", "Oldest First")
+            val years = listOf("All", "Newest First", "Oldest First")
             
             Box {
                 OutlinedButton(
@@ -523,7 +524,7 @@ fun FilterDropdownContent(
                 modifier = Modifier.padding(bottom = 3.dp)
             )
             
-            val ratings = listOf("High to Low", "Low to High")
+            val ratings = listOf("All", "High to Low", "Low to High")
             
             Box {
                 OutlinedButton(
